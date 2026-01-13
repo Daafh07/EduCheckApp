@@ -7,8 +7,12 @@ import {
   StatusBar,
   Image,
   ScrollView,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+
+const { height } = Dimensions.get('window');
 
 const SettingsScreen = ({ onNavigateBack, onLogout }) => {
   return (
@@ -98,8 +102,8 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#E6B3FF',
-    paddingTop: 80,
-    paddingBottom: 20,
+    paddingTop: Platform.OS === 'ios' ? Math.round(height * 0.08) : Math.round(height * 0.04),
+    paddingBottom: Math.round(height * 0.025),
     alignItems: 'center',
     justifyContent: 'center',
   },
