@@ -8,29 +8,410 @@ import {
   Animated,
   FlatList,
   Dimensions,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import Svg, { Path, Circle, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
 const { height, width } = Dimensions.get('window');
 
+import { useTheme } from '../ThemeContext';
+
 const AttendanceScreen = ({ onNavigateToSettings }) => {
+  const [selectedDay, setSelectedDay] = React.useState(null);
+  const [noteExpanded, setNoteExpanded] = React.useState(false);
+  const [displayPercentage, setDisplayPercentage] = React.useState(0);
+  const [statusFilter, setStatusFilter] = React.useState(null);
+  const fadeAnim = React.useRef(new Animated.Value(1)).current;
+  const slideAnim = React.useRef(new Animated.Value(0)).current;
+
+  // Animated values for chart
+  const animatedPresentDash = React.useRef(new Animated.Value(0)).current;
+  const animatedLateDash = React.useRef(new Animated.Value(0)).current;
+  const animatedAbsentDash = React.useRef(new Animated.Value(0)).current;
+  const animatedPercentage = React.useRef(new Animated.Value(0)).current;
+
+  // Animated values for table rows
+  const rowAnimations = React.useRef([]).current;
+
+  const handleSelectDay = (day) => {
+    if (selectedDay) {
+      setSelectedDay(day);
+      setNoteExpanded(false);
+      return;
+    }
+
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: -50,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setSelectedDay(day);
+      fadeAnim.setValue(0);
+      slideAnim.setValue(50);
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+  };
+
+  const handleBackPress = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 50,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setSelectedDay(null);
+      setNoteExpanded(false);
+
+      // Reset row animations
+      attendanceData.forEach((_, index) => {
+        const rowAnim = getRowAnimation(index);
+        rowAnim.opacity.setValue(0);
+        rowAnim.translateY.setValue(-30);
+      });
+
+      // Reset chart animations
+      animatedPresentDash.setValue(0);
+      animatedLateDash.setValue(0);
+      animatedAbsentDash.setValue(0);
+      animatedPercentage.setValue(0);
+      setDisplayPercentage(0);
+
+      fadeAnim.setValue(0);
+      slideAnim.setValue(-50);
+
+      // Start all animations together
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // Restart chart animations immediately
+      Animated.parallel([
+        Animated.timing(animatedPresentDash, {
+          toValue: presentDash,
+          duration: 1200,
+          useNativeDriver: false,
+        }),
+        Animated.timing(animatedLateDash, {
+          toValue: lateDash,
+          duration: 1200,
+          useNativeDriver: false,
+        }),
+        Animated.timing(animatedAbsentDash, {
+          toValue: absentDash,
+          duration: 1200,
+          useNativeDriver: false,
+        }),
+        Animated.timing(animatedPercentage, {
+          toValue: presentPercentage,
+          duration: 1200,
+          useNativeDriver: false,
+        }),
+      ]).start();
+
+      // Restart row animations immediately
+      const animations = attendanceData.map((_, index) => {
+        const rowAnim = getRowAnimation(index);
+        return Animated.parallel([
+          Animated.timing(rowAnim.opacity, {
+            toValue: 1,
+            duration: 400,
+            delay: index * 50,
+            useNativeDriver: true,
+          }),
+          Animated.timing(rowAnim.translateY, {
+            toValue: 0,
+            duration: 400,
+            delay: index * 50,
+            useNativeDriver: true,
+          }),
+        ]);
+      });
+      Animated.stagger(0, animations).start();
+    });
+  };
+
   const attendanceData = [
-    { day: 'Mon', date: 'Dec 15', status: 'Present', color: '#E3A6FF' },
-    { day: 'Fri', date: 'Dec 12', status: 'Present', color: '#E3A6FF' },
-    { day: 'Thu', date: 'Dec 11', status: 'Late', color: '#5182FF' },
-    { day: 'Wed', date: 'Dec 10', status: 'Present', color: '#E3A6FF' },
-    { day: 'Tue', date: 'Dec 9', status: 'Absent', color: '#DE0000' },
-    { day: 'Mon', date: 'Dec 8', status: 'Absent', color: '#DE0000' },
-    { day: 'Fri', date: 'Dec 5', status: 'Present', color: '#E3A6FF' },
-    { day: 'Thu', date: 'Dec 4', status: 'Late', color: '#5182FF' },
-    { day: 'Wed', date: 'Dec 3', status: 'Present', color: '#E3A6FF' },
-    { day: 'Tue', date: 'Dec 2', status: 'Present', color: '#E3A6FF' },
-    { day: 'Mon', date: 'Dec 1', status: 'Present', color: '#E3A6FF' },
-    { day: 'Fri', date: 'Nov 28', status: 'Late', color: '#5182FF' },
-    { day: 'Thu', date: 'Nov 27', status: 'Late', color: '#5182FF' },
-    { day: 'Wed', date: 'Nov 26', status: 'Present', color: '#E3A6FF' },
-    { day: 'Tue', date: 'Nov 25', status: 'Present', color: '#E3A6FF' },
+    { day: 'Mon', date: 'Dec 15', status: 'Present', color: '#E3A6FF', time: '08:30', reason: '', note: '' },
+    { day: 'Fri', date: 'Dec 12', status: 'Present', color: '#E3A6FF', time: '08:25', reason: '', note: '' },
+    { day: 'Thu', date: 'Dec 11', status: 'Late', color: '#5182FF', time: '09:42', reason: 'Doktor afspraak', note: 'Leerling had een afspraak staan bij de doktor, hierdoor was de leerling iets later op school dan normaal. Dit is geen probleem.\n\n-Ronald' },
+    { day: 'Wed', date: 'Dec 10', status: 'Present', color: '#E3A6FF', time: '08:28', reason: '', note: '' },
+    { day: 'Tue', date: 'Dec 9', status: 'Absent', color: '#DE0000', time: '-', reason: 'Ziek', note: 'Leerling was ziek thuis.' },
+    { day: 'Mon', date: 'Dec 8', status: 'Absent', color: '#DE0000', time: '-', reason: 'Ziek', note: 'Leerling was ziek thuis.' },
+    { day: 'Fri', date: 'Dec 5', status: 'Present', color: '#E3A6FF', time: '08:32', reason: '', note: '' },
+    { day: 'Thu', date: 'Dec 4', status: 'Late', color: '#5182FF', time: '09:15', reason: 'Verkeer', note: 'File op de snelweg.' },
+    { day: 'Wed', date: 'Dec 3', status: 'Present', color: '#E3A6FF', time: '08:27', reason: '', note: '' },
+    { day: 'Tue', date: 'Dec 2', status: 'Present', color: '#E3A6FF', time: '08:29', reason: '', note: '' },
+    { day: 'Mon', date: 'Dec 1', status: 'Present', color: '#E3A6FF', time: '08:26', reason: '', note: '' },
+    { day: 'Fri', date: 'Nov 28', status: 'Late', color: '#5182FF', time: '09:05', reason: 'Gemist bus', note: 'Bus gemist door wekker te laat.' },
+    { day: 'Thu', date: 'Nov 27', status: 'Late', color: '#5182FF', time: '08:50', reason: 'Verkeer', note: 'Vertraging door wegwerkzaamheden.' },
+    { day: 'Wed', date: 'Nov 26', status: 'Present', color: '#E3A6FF', time: '08:31', reason: '', note: '' },
+    { day: 'Tue', date: 'Nov 25', status: 'Present', color: '#E3A6FF', time: '08:24', reason: '', note: '' },
+    { day: 'Mon', date: 'Nov 24', status: 'Present', color: '#E3A6FF', time: '08:30', reason: '', note: '' },
+    { day: 'Fri', date: 'Nov 21', status: 'Present', color: '#E3A6FF', time: '08:25', reason: '', note: '' },
+    { day: 'Thu', date: 'Nov 20', status: 'Present', color: '#E3A6FF', time: '08:30', reason: '', note: '' },
+
   ];
+
+  // Filter data based on status filter
+  const filteredData = statusFilter
+    ? attendanceData.filter(item => item.status === statusFilter)
+    : attendanceData;
+
+  // Calculate attendance statistics
+  const totalDays = attendanceData.length;
+  const presentCount = attendanceData.filter(item => item.status === 'Present').length;
+  const lateCount = attendanceData.filter(item => item.status === 'Late').length;
+  const absentCount = attendanceData.filter(item => item.status === 'Absent').length;
+
+  const presentPercentage = Math.round((presentCount / totalDays) * 100);
+  const latePercentage = Math.round((lateCount / totalDays) * 100);
+  const absentPercentage = Math.round((absentCount / totalDays) * 100);
+
+  // Calculate stroke dash arrays for the circle (circumference ≈ 660)
+  const circumference = 660;
+  const presentDash = (presentCount / totalDays) * circumference;
+  const lateDash = (lateCount / totalDays) * circumference;
+  const absentDash = (absentCount / totalDays) * circumference;
+
+  // Get or create animated value for a row
+  const getRowAnimation = (index) => {
+    if (!rowAnimations[index]) {
+      rowAnimations[index] = {
+        opacity: new Animated.Value(0),
+        translateY: new Animated.Value(-30),
+      };
+    }
+    return rowAnimations[index];
+  };
+
+  // Animate chart values when data changes
+  React.useEffect(() => {
+    // Add listener to update display percentage during animation
+    const listenerId = animatedPercentage.addListener(({ value }) => {
+      setDisplayPercentage(Math.round(value));
+    });
+
+    Animated.parallel([
+      Animated.timing(animatedPresentDash, {
+        toValue: presentDash,
+        duration: 1200,
+        useNativeDriver: false,
+      }),
+      Animated.timing(animatedLateDash, {
+        toValue: lateDash,
+        duration: 1200,
+        useNativeDriver: false,
+      }),
+      Animated.timing(animatedAbsentDash, {
+        toValue: absentDash,
+        duration: 1200,
+        useNativeDriver: false,
+      }),
+      Animated.timing(animatedPercentage, {
+        toValue: presentPercentage,
+        duration: 1200,
+        useNativeDriver: false,
+      }),
+    ]).start();
+
+    // Cleanup listener on unmount
+    return () => {
+      animatedPercentage.removeListener(listenerId);
+    };
+  }, [presentDash, lateDash, absentDash, presentPercentage]);
+
+  // Animate table rows on mount
+  React.useEffect(() => {
+    const animations = attendanceData.map((_, index) => {
+      const rowAnim = getRowAnimation(index);
+      return Animated.parallel([
+        Animated.timing(rowAnim.opacity, {
+          toValue: 1,
+          duration: 400,
+          delay: index * 50,
+          useNativeDriver: true,
+        }),
+        Animated.timing(rowAnim.translateY, {
+          toValue: 0,
+          duration: 400,
+          delay: index * 50,
+          useNativeDriver: true,
+        }),
+      ]);
+    });
+
+    Animated.stagger(0, animations).start();
+  }, []);
+
+  if (selectedDay) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+
+        <View style={styles.header}>
+          <Text style={styles.appTitle}>Edu Check</Text>
+        </View>
+
+        <Animated.View style={[styles.detailContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+          <View style={styles.detailHeader}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={handleBackPress}
+              activeOpacity={0.6}
+            >
+              <Text style={styles.backButtonText}>←</Text>
+            </TouchableOpacity>
+            <Text style={styles.detailTitle}>
+              {selectedDay.day} {selectedDay.date.toLowerCase()}
+            </Text>
+          </View>
+
+          <View style={styles.detailInfoContainer}>
+            <View style={styles.statusBadge}>
+            <View style={[styles.statusDot, { backgroundColor: selectedDay.color }]} />
+            <Text style={styles.statusText}>{selectedDay.status}</Text>
+            <Text style={styles.statusTime}>{selectedDay.time}</Text>
+          </View>
+
+          <View style={styles.reasonSection}>
+            <Text style={styles.reasonText}>
+              {selectedDay.reason ? `Reden: ${selectedDay.reason}` : 'Reden: -'}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.noteSection, noteExpanded && styles.noteSectionExpanded]}
+            onPress={() => {
+              if (selectedDay.note && selectedDay.note.split(' ').length > 10) {
+                setNoteExpanded(!noteExpanded);
+              }
+            }}
+            activeOpacity={selectedDay.note && selectedDay.note.split(' ').length > 10 ? 0.7 : 1}
+            disabled={!selectedDay.note || selectedDay.note.split(' ').length <= 10}
+          >
+            <Text style={styles.noteLabel}>Opmerking:</Text>
+            <View style={styles.noteBox}>
+              <Text style={styles.noteText}>
+                {selectedDay.note
+                  ? (noteExpanded
+                    ? selectedDay.note
+                    : selectedDay.note.split(' ').length > 10
+                    ? selectedDay.note.split(' ').slice(0, 10).join(' ') + ' ...meer'
+                    : selectedDay.note)
+                  : '-'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+          </View>
+
+          <View style={styles.dividerLine} />
+
+          <View style={styles.tableHeader}>
+            <View style={styles.headerDay}>
+              <Text style={styles.headerText}>Day</Text>
+            </View>
+            <View style={styles.headerCol}>
+              <Text style={styles.headerText}>Date</Text>
+            </View>
+            <View style={styles.headerCol}>
+              <Text style={styles.headerText}>Status</Text>
+            </View>
+          </View>
+
+          <View style={styles.tableContainer}>
+            <Animated.FlatList
+              data={filteredData}
+              keyExtractor={(item, index) => index.toString()}
+              contentContainerStyle={{ paddingBottom: 120 }}
+              renderItem={({ item, index }) => {
+                const rowAnim = getRowAnimation(index);
+                return (
+                  <Animated.View
+                    style={{
+                      opacity: rowAnim.opacity,
+                      transform: [{ translateY: rowAnim.translateY }],
+                    }}
+                  >
+                    <TouchableOpacity
+                      style={[
+                        styles.tableRow,
+                        selectedDay && selectedDay.day === item.day && selectedDay.date === item.date && styles.selectedRow
+                      ]}
+                      onPress={() => handleSelectDay(item)}
+                      activeOpacity={0.6}
+                    >
+                      <View style={styles.dayCell}>
+                        <View style={styles.dotColumn}>
+                          <View style={[styles.colorDot, { backgroundColor: item.color }]} />
+                        </View>
+                        <Text style={styles.cellText}>{item.day}</Text>
+                      </View>
+                      <View style={styles.cellWrapper}>
+                        <Text style={styles.cellText}>{item.date}</Text>
+                      </View>
+                      <View style={styles.cellWrapper}>
+                        <Text style={styles.cellText}>{item.status}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </Animated.View>
+                );
+              }}
+              showsVerticalScrollIndicator={false}
+            />
+            <Svg style={styles.fadeOverlay} width={width} height={180} pointerEvents="box-none">
+              <Defs>
+                <LinearGradient id="fadeGradient" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0%" stopColor="#FCF5FF" stopOpacity="0" />
+                  <Stop offset="15%" stopColor="#FCF5FF" stopOpacity="0.3" />
+                  <Stop offset="35%" stopColor="#FCF5FF" stopOpacity="0.65" />
+                  <Stop offset="55%" stopColor="#FCF5FF" stopOpacity="0.88" />
+                  <Stop offset="75%" stopColor="#FCF5FF" stopOpacity="0.97" />
+                  <Stop offset="100%" stopColor="#FCF5FF" stopOpacity="1" />
+                </LinearGradient>
+              </Defs>
+              <Rect x="0" y="0" width="100%" height="100%" fill="url(#fadeGradient)" pointerEvents="none" />
+            </Svg>
+          </View>
+        </Animated.View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -40,7 +421,7 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
         <Text style={styles.appTitle}>Edu Check</Text>
       </View>
 
-      <View style={styles.content}>
+      <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
         <View style={styles.titleRow}>
           <Text style={styles.pageTitle}>Attendance</Text>
           <TouchableOpacity onPress={onNavigateToSettings} style={styles.settingsButton}>
@@ -65,46 +446,103 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
 
         <View style={styles.chartContainer}>
           <Svg width={Math.min(width * 0.65, 280)} height={Math.min(width * 0.65, 280)} viewBox="0 0 300 300">
-
-            <Circle
+            <AnimatedCircle
               cx="150"
               cy="150"
               r="105"
               fill="none"
-              stroke="#e19fff"
-              strokeWidth="60"
-              strokeDasharray="400 660"
+              stroke={statusFilter === 'Present' ? '#d18aff' : '#e19fff'}
+              strokeWidth={statusFilter === 'Present' ? 65 : 60}
+              strokeDasharray={animatedPresentDash.interpolate({
+                inputRange: [0, circumference],
+                outputRange: [`0 ${circumference}`, `${circumference} ${circumference}`],
+              })}
               strokeDashoffset="0"
               transform="rotate(-90 150 150)"
             />
-
-            <Circle
+            <AnimatedCircle
               cx="150"
               cy="150"
               r="105"
               fill="none"
-              stroke="#5182FF"
-              strokeWidth="60"
-              strokeDasharray="132 660"
-              strokeDashoffset="-396"
+              stroke={statusFilter === 'Late' ? '#3d6edb' : '#5182FF'}
+              strokeWidth={statusFilter === 'Late' ? 65 : 60}
+              strokeDasharray={animatedLateDash.interpolate({
+                inputRange: [0, circumference],
+                outputRange: [`0 ${circumference}`, `${circumference} ${circumference}`],
+              })}
+              strokeDashoffset={animatedPresentDash.interpolate({
+                inputRange: [0, circumference],
+                outputRange: [0, -circumference],
+              })}
               transform="rotate(-90 150 150)"
             />
-
-            <Circle
+            <AnimatedCircle
               cx="150"
               cy="150"
               r="105"
               fill="none"
-              stroke="#DE0000"
-              strokeWidth="60"
-              strokeDasharray="132 660"
-              strokeDashoffset="-528"
+              stroke={statusFilter === 'Absent' ? '#b00000' : '#DE0000'}
+              strokeWidth={statusFilter === 'Absent' ? 65 : 60}
+              strokeDasharray={animatedAbsentDash.interpolate({
+                inputRange: [0, circumference],
+                outputRange: [`0 ${circumference}`, `${circumference} ${circumference}`],
+              })}
+              strokeDashoffset={Animated.add(animatedPresentDash, animatedLateDash).interpolate({
+                inputRange: [0, circumference * 2],
+                outputRange: [0, -circumference * 2],
+              })}
               transform="rotate(-90 150 150)"
             />
-
             <Circle cx="150" cy="150" r="82" fill="#FCF5FF" />
           </Svg>
-          <Text style={styles.chartPercentage}>67%</Text>
+
+          {/* Clickable overlay - entire circle */}
+          <TouchableOpacity
+            style={styles.chartClickableArea}
+            onPress={(e) => {
+              const { locationX, locationY } = e.nativeEvent;
+              const centerX = (Math.min(width * 0.65, 280)) / 2;
+              const centerY = (Math.min(width * 0.65, 280)) / 2;
+
+              // Calculate angle from center
+              const dx = locationX - centerX;
+              const dy = locationY - centerY;
+              const distance = Math.sqrt(dx * dx + dy * dy);
+
+              // Check if click is in the ring (between radius 75 and 135)
+              const innerRadius = 75;
+              const outerRadius = 135;
+
+              if (distance >= innerRadius && distance <= outerRadius) {
+                let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                angle = (angle + 90 + 360) % 360; // Adjust so 0° is at top
+
+                // Determine which segment based on angle and segment sizes
+                const presentAngle = (presentCount / totalDays) * 360;
+                const lateAngle = (lateCount / totalDays) * 360;
+                const absentAngle = (absentCount / totalDays) * 360;
+
+                if (angle < presentAngle) {
+                  setStatusFilter(statusFilter === 'Present' ? null : 'Present');
+                } else if (angle < presentAngle + lateAngle) {
+                  setStatusFilter(statusFilter === 'Late' ? null : 'Late');
+                } else if (angle < presentAngle + lateAngle + absentAngle) {
+                  setStatusFilter(statusFilter === 'Absent' ? null : 'Absent');
+                } else {
+                  setStatusFilter(statusFilter === 'Present' ? null : 'Present');
+                }
+              } else if (distance < innerRadius) {
+                // Click in center - reset filter
+                setStatusFilter(null);
+              }
+            }}
+            activeOpacity={1}
+          >
+            <Text style={styles.chartPercentage}>
+              {displayPercentage}%
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.dividerLine} />
@@ -122,30 +560,47 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
 
         <View style={styles.tableContainer}>
           <Animated.FlatList
-            data={attendanceData}
+            data={filteredData}
             keyExtractor={(item, index) => index.toString()}
             contentContainerStyle={{ paddingBottom: 120 }}
-            renderItem={({ item }) => (
-              <View style={styles.tableRow}>
-                <View style={styles.dayCell}>
-                  <View style={styles.dotColumn}>
-                    <View style={[styles.colorDot, { backgroundColor: item.color }]} />
-                  </View>
-                  <Text style={styles.cellText}>{item.day}</Text>
-                </View>
-                <View style={styles.cellWrapper}>
-                  <Text style={styles.cellText}>{item.date}</Text>
-                </View>
-                <View style={styles.cellWrapper}>
-                  <Text style={styles.cellText}>{item.status}</Text>
-                </View>
-              </View>
-            )}
+            renderItem={({ item, index }) => {
+              const rowAnim = getRowAnimation(index);
+              return (
+                <Animated.View
+                  style={{
+                    opacity: rowAnim.opacity,
+                    transform: [{ translateY: rowAnim.translateY }],
+                  }}
+                >
+                  <TouchableOpacity
+                    style={[
+                      styles.tableRow,
+                      selectedDay && selectedDay.day === item.day && selectedDay.date === item.date && styles.selectedRow
+                    ]}
+                    onPress={() => handleSelectDay(item)}
+                    activeOpacity={0.6}
+                  >
+                    <View style={styles.dayCell}>
+                      <View style={styles.dotColumn}>
+                        <View style={[styles.colorDot, { backgroundColor: item.color }]} />
+                      </View>
+                      <Text style={styles.cellText}>{item.day}</Text>
+                    </View>
+                    <View style={styles.cellWrapper}>
+                      <Text style={styles.cellText}>{item.date}</Text>
+                    </View>
+                    <View style={styles.cellWrapper}>
+                      <Text style={styles.cellText}>{item.status}</Text>
+                    </View>
+                  </TouchableOpacity>
+                </Animated.View>
+              );
+            }}
             showsVerticalScrollIndicator={false}
           />
-          <Svg style={styles.fadeOverlay} width={width} height={180} pointerEvents="none">
+          <Svg style={styles.fadeOverlay} width={width} height={180} pointerEvents="box-none">
             <Defs>
-              <LinearGradient id="fadeGradient" x1="0" y1="0" x2="0" y2="1">
+              <LinearGradient id="fadeGradient2" x1="0" y1="0" x2="0" y2="1">
                 <Stop offset="0%" stopColor="#FCF5FF" stopOpacity="0" />
                 <Stop offset="15%" stopColor="#FCF5FF" stopOpacity="0.3" />
                 <Stop offset="35%" stopColor="#FCF5FF" stopOpacity="0.65" />
@@ -154,10 +609,10 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
                 <Stop offset="100%" stopColor="#FCF5FF" stopOpacity="1" />
               </LinearGradient>
             </Defs>
-            <Rect x="0" y="0" width="100%" height="100%" fill="url(#fadeGradient)" />
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#fadeGradient2)" pointerEvents="none" />
           </Svg>
         </View>
-      </View>
+      </Animated.View>
     </View>
   );
 };
@@ -169,7 +624,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#E6B3FF',
-    paddingTop: Math.round(height * 0.08),
+    paddingTop: Platform.OS === 'ios' ? Math.round(height * 0.08) : Math.round(height * 0.04),
     paddingBottom: Math.round(height * 0.025),
     alignItems: 'center',
     justifyContent: 'center',
@@ -180,6 +635,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   content: {
+    flex: 1,
+    paddingHorizontal: Math.round(width * 0.09),
+    paddingTop: Math.round(height * 0.028),
+    position: 'relative',
+  },
+  detailContent: {
     flex: 1,
     paddingHorizontal: Math.round(width * 0.09),
     paddingTop: Math.round(height * 0.028),
@@ -209,10 +670,21 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   chartPercentage: {
-    position: 'absolute',
     fontSize: Math.round(width * 0.085),
     fontWeight: '600',
     color: '#000',
+  },
+  chartClickableArea: {
+    position: 'absolute',
+    width: Math.min(width * 0.65, 280),
+    height: Math.min(width * 0.65, 280),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailInfoContainer: {
+    height: Math.min(width * 0.65, 280) + Math.round(height * 0.008) + Math.round(height * 0.025),
+    marginVertical: Math.round(height * 0.008),
+    marginBottom: Math.round(height * 0.025),
   },
   dividerLine: {
     height: 2,
@@ -241,6 +713,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: -20,
     left: 0,
+    pointerEvents: 'none',
   },
   tableRow: {
     flexDirection: 'row',
@@ -248,6 +721,10 @@ const styles = StyleSheet.create({
     paddingVertical: Math.round(height * 0.014),
     paddingHorizontal: Math.round(width * 0.05),
     justifyContent: 'space-between',
+  },
+  selectedRow: {
+    backgroundColor: '#F4DCFF',
+    borderRadius: 31,
   },
   dotColumn: {
     position: 'absolute',
@@ -286,6 +763,98 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#000',
     textAlign: 'center',
+  },
+  detailHeader: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Math.round(height * 0.018),
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    left: -6,
+  },
+  backButtonText: {
+    fontSize: 28,
+    fontWeight: '600',
+    color: '#000',
+  },
+  detailTitle: {
+    fontSize: 28,
+    fontWeight: '600',
+    color: '#000',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F4DCFF',
+    paddingVertical: Math.round(height * 0.012),
+    paddingHorizontal: Math.round(width * 0.06),
+    borderRadius: 31,
+    marginBottom: Math.round(height * 0.018),
+  },
+  statusDot: {
+    width: Math.round(width * 0.026),
+    height: Math.round(width * 0.026),
+    borderRadius: Math.round(width * 0.013),
+    marginRight: Math.round(width * 0.02),
+  },
+  statusText: {
+    fontSize: Math.round(width * 0.05),
+    fontWeight: '600',
+    color: '#000',
+    flex: 1,
+  },
+  statusTime: {
+    fontSize: Math.round(width * 0.05),
+    fontWeight: '600',
+    color: '#000',
+  },
+  reasonSection: {
+    backgroundColor: '#F4DCFF',
+    paddingVertical: Math.round(height * 0.015),
+    paddingHorizontal: Math.round(width * 0.06),
+    borderRadius: 31,
+    marginBottom: Math.round(height * 0.018),
+  },
+  reasonText: {
+    fontSize: Math.round(width * 0.04),
+    fontWeight: '600',
+    color: '#000',
+  },
+  noteSection: {
+    backgroundColor: '#F4DCFF',
+    paddingVertical: Math.round(height * 0.02),
+    paddingHorizontal: Math.round(width * 0.06),
+    borderRadius: 22,
+    marginBottom: Math.round(height * 0.018),
+  },
+  noteSectionExpanded: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    elevation: 10,
+  },
+  noteLabel: {
+    fontSize: Math.round(width * 0.04),
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: Math.round(height * 0.018),
+  },
+  noteBox: {
+    backgroundColor: '#FFFFFF',
+    padding: Math.round(width * 0.05),
+    borderRadius: 13,
+    marginBottom: Math.round(height * 0.007),
+  },
+  noteText: {
+    fontSize: Math.round(width * 0.035),
+    fontWeight: '400',
+    color: '#000',
+    lineHeight: Math.round(width * 0.06),
   },
 });
 
