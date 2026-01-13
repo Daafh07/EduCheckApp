@@ -5,9 +5,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
-  ScrollView,
+  Animated,
+  FlatList,
+  Dimensions,
 } from 'react-native';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { Path, Circle, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
+
+const { height, width } = Dimensions.get('window');
 
 const AttendanceScreen = ({ onNavigateToSettings }) => {
   const attendanceData = [
@@ -18,8 +22,14 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
     { day: 'Tue', date: 'Dec 9', status: 'Absent', color: '#DE0000' },
     { day: 'Mon', date: 'Dec 8', status: 'Absent', color: '#DE0000' },
     { day: 'Fri', date: 'Dec 5', status: 'Present', color: '#E3A6FF' },
-    { day: 'Thu', date: 'Dec 6', status: 'Late', color: '#5182FF' },
-    { day: 'Wed', date: 'Dec 5', status: 'Present', color: '#E3A6FF' },
+    { day: 'Thu', date: 'Dec 4', status: 'Late', color: '#5182FF' },
+    { day: 'Wed', date: 'Dec 3', status: 'Present', color: '#E3A6FF' },
+    { day: 'Tue', date: 'Dec 2', status: 'Present', color: '#E3A6FF' },
+    { day: 'Mon', date: 'Dec 1', status: 'Present', color: '#E3A6FF' },
+    { day: 'Fri', date: 'Nov 28', status: 'Late', color: '#5182FF' },
+    { day: 'Thu', date: 'Nov 27', status: 'Late', color: '#5182FF' },
+    { day: 'Wed', date: 'Nov 26', status: 'Present', color: '#E3A6FF' },
+    { day: 'Tue', date: 'Nov 25', status: 'Present', color: '#E3A6FF' },
   ];
 
   return (
@@ -54,93 +64,99 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
         </View>
 
         <View style={styles.chartContainer}>
-          <Svg width="300" height="300" viewBox="0 0 300 300">
-            {/* Light purple segment - bottom right (50%) */}
+          <Svg width={Math.min(width * 0.65, 280)} height={Math.min(width * 0.65, 280)} viewBox="0 0 300 300">
+
             <Circle
               cx="150"
               cy="150"
               r="105"
               fill="none"
-              stroke="#E3A6FF"
-              strokeWidth="45"
-              strokeDasharray="330 660"
+              stroke="#e19fff"
+              strokeWidth="60"
+              strokeDasharray="400 660"
               strokeDashoffset="0"
               transform="rotate(-90 150 150)"
             />
 
-            {/* Light purple small segment - bottom left transition (10%) */}
-            <Circle
-              cx="150"
-              cy="150"
-              r="105"
-              fill="none"
-              stroke="#E3A6FF"
-              strokeWidth="45"
-              strokeDasharray="66 660"
-              strokeDashoffset="-330"
-              transform="rotate(-90 150 150)"
-            />
-
-            {/* Blue segment - left side (20%) */}
             <Circle
               cx="150"
               cy="150"
               r="105"
               fill="none"
               stroke="#5182FF"
-              strokeWidth="45"
+              strokeWidth="60"
               strokeDasharray="132 660"
               strokeDashoffset="-396"
               transform="rotate(-90 150 150)"
             />
 
-            {/* Red segment - top (20%) */}
             <Circle
               cx="150"
               cy="150"
               r="105"
               fill="none"
               stroke="#DE0000"
-              strokeWidth="45"
+              strokeWidth="60"
               strokeDasharray="132 660"
               strokeDashoffset="-528"
               transform="rotate(-90 150 150)"
             />
 
-            {/* Center white circle */}
             <Circle cx="150" cy="150" r="82" fill="#FCF5FF" />
           </Svg>
           <Text style={styles.chartPercentage}>67%</Text>
         </View>
 
+        <View style={styles.dividerLine} />
         <View style={styles.tableHeader}>
-          <View style={styles.headerDayWrapper}>
+          <View style={styles.headerDay}>
             <Text style={styles.headerText}>Day</Text>
           </View>
-          <View style={styles.headerWrapper}>
+          <View style={styles.headerCol}>
             <Text style={styles.headerText}>Date</Text>
           </View>
-          <View style={styles.headerWrapper}>
+          <View style={styles.headerCol}>
             <Text style={styles.headerText}>Status</Text>
           </View>
         </View>
 
-        <ScrollView style={styles.tableContainer} showsVerticalScrollIndicator={false}>
-          {attendanceData.map((item, index) => (
-            <View key={index} style={styles.tableRow}>
-              <View style={styles.dayCellWrapper}>
-                <View style={[styles.colorDot, { backgroundColor: item.color }]} />
-                <Text style={styles.cellText}>{item.day}</Text>
+        <View style={styles.tableContainer}>
+          <Animated.FlatList
+            data={attendanceData}
+            keyExtractor={(item, index) => index.toString()}
+            contentContainerStyle={{ paddingBottom: 120 }}
+            renderItem={({ item }) => (
+              <View style={styles.tableRow}>
+                <View style={styles.dayCell}>
+                  <View style={styles.dotColumn}>
+                    <View style={[styles.colorDot, { backgroundColor: item.color }]} />
+                  </View>
+                  <Text style={styles.cellText}>{item.day}</Text>
+                </View>
+                <View style={styles.cellWrapper}>
+                  <Text style={styles.cellText}>{item.date}</Text>
+                </View>
+                <View style={styles.cellWrapper}>
+                  <Text style={styles.cellText}>{item.status}</Text>
+                </View>
               </View>
-              <View style={styles.cellWrapper}>
-                <Text style={styles.cellText}>{item.date}</Text>
-              </View>
-              <View style={styles.cellWrapper}>
-                <Text style={styles.cellText}>{item.status}</Text>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
+            )}
+            showsVerticalScrollIndicator={false}
+          />
+          <Svg style={styles.fadeOverlay} width={width} height={180} pointerEvents="none">
+            <Defs>
+              <LinearGradient id="fadeGradient" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0%" stopColor="#FCF5FF" stopOpacity="0" />
+                <Stop offset="15%" stopColor="#FCF5FF" stopOpacity="0.3" />
+                <Stop offset="35%" stopColor="#FCF5FF" stopOpacity="0.65" />
+                <Stop offset="55%" stopColor="#FCF5FF" stopOpacity="0.88" />
+                <Stop offset="75%" stopColor="#FCF5FF" stopOpacity="0.97" />
+                <Stop offset="100%" stopColor="#FCF5FF" stopOpacity="1" />
+              </LinearGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#fadeGradient)" />
+          </Svg>
+        </View>
       </View>
     </View>
   );
@@ -153,8 +169,8 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#E6B3FF',
-    paddingTop: 80,
-    paddingBottom: 20,
+    paddingTop: Math.round(height * 0.08),
+    paddingBottom: Math.round(height * 0.025),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -165,14 +181,15 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 35,
-    paddingTop: 26,
+    paddingHorizontal: Math.round(width * 0.09),
+    paddingTop: Math.round(height * 0.028),
+    position: 'relative',
   },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: Math.round(height * 0.018),
     position: 'relative',
   },
   pageTitle: {
@@ -187,67 +204,88 @@ const styles = StyleSheet.create({
   chartContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 20,
+    marginVertical: Math.round(height * 0.008),
+    marginBottom: Math.round(height * 0.025),
     position: 'relative',
   },
   chartPercentage: {
     position: 'absolute',
-    fontSize: 37,
+    fontSize: Math.round(width * 0.085),
     fontWeight: '600',
     color: '#000',
   },
-  divider: {
-    height: 1,
+  dividerLine: {
+    height: 2,
     backgroundColor: '#A27CB3',
-    marginVertical: 25,
-    marginHorizontal: 0,
+    marginHorizontal: 15,
+    borderRadius: 2,
   },
   tableHeader: {
     flexDirection: 'row',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderBottomWidth: 2,
-    borderBottomColor: '#A27CB3',
+    paddingVertical: Math.round(height * 0.022),
+    paddingHorizontal: Math.round(width * 0.05),
     alignItems: 'center',
-  },
-  headerDayWrapper: {
-    flex: 1,
-  },
-  headerWrapper: {
-    flex: 1,
+    justifyContent: 'space-between',
   },
   headerText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#000',
+    textAlign: 'center',
   },
   tableContainer: {
     flex: 1,
+    paddingBottom: Math.round(height * 0.05),
+  },
+  fadeOverlay: {
+    position: 'absolute',
+    bottom: -20,
+    left: 0,
   },
   tableRow: {
     flexDirection: 'row',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
     alignItems: 'center',
+    paddingVertical: Math.round(height * 0.014),
+    paddingHorizontal: Math.round(width * 0.05),
+    justifyContent: 'space-between',
   },
-  dayCellWrapper: {
-    flex: 1,
-    flexDirection: 'row',
+  dotColumn: {
+    position: 'absolute',
+    left: 4,
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
   },
-  cellWrapper: {
-    flex: 1,
+  headerDay: {
+    width: width * 0.25,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  cellText: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#000',
+  headerCol: {
+    width: width * 0.25,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayCell: {
+    width: width * 0.25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
   },
   colorDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
+  },
+  cellWrapper: {
+    width: width * 0.25,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cellText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000',
+    textAlign: 'center',
   },
 });
 
