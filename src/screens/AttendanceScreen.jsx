@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 
+import { useTheme } from '../ThemeContext';
+
 const AttendanceScreen = ({ onNavigateToSettings }) => {
   const attendanceData = [
     { day: 'Mon', date: 'Dec 15', status: 'Present', color: '#E3A6FF' },
