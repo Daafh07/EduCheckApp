@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  StatusBar,
-  Platform,
-  Dimensions,
+    View,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    StyleSheet,
+    StatusBar, Dimensions,
 } from 'react-native';
 import Svg, { Path, Rect, G, Defs, Filter, FeFlood, FeBlend, FeGaussianBlur } from 'react-native-svg';
 
-const { height } = Dimensions.get('window');
+const { height, width } = Dimensions.get('window');
 
 const LoginScreen = ({ onLogin }) => {
   const [school, setSchool] = useState('');
@@ -111,7 +109,7 @@ const LoginScreen = ({ onLogin }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FCF5FF',
   },
   header: {
     backgroundColor: '#E6B3FF',
@@ -127,14 +125,14 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 35,
-    paddingTop: 60,
-    alignItems: 'center',
+    paddingHorizontal: Math.round(width * 0.09),
+    paddingTop: Math.round(height * 0.08),
+    position: 'relative',
   },
   loginCard: {
     width: '100%',
     maxWidth: 369,
-    padding: 31,
+    padding: 20,
     borderRadius: 31,
     backgroundColor: '#F4DCFF',
   },
@@ -143,7 +141,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 28,
     fontWeight: '600',
-    marginBottom: 43,
+    marginBottom: 12,
   },
   divider: {
     width: '100%',
@@ -160,6 +158,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
+    marginLeft: 20,
   },
   inputWrapper: {
     position: 'relative',
@@ -201,7 +200,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-    marginTop: 22,
   },
   loginButtonText: {
     color: '#000',
