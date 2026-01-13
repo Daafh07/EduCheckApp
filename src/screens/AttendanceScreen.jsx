@@ -30,8 +30,6 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
     { day: 'Thu', date: 'Nov 27', status: 'Late', color: '#5182FF' },
     { day: 'Wed', date: 'Nov 26', status: 'Present', color: '#E3A6FF' },
     { day: 'Tue', date: 'Nov 25', status: 'Present', color: '#E3A6FF' },
-
-
   ];
 
   return (
@@ -66,7 +64,7 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
         </View>
 
         <View style={styles.chartContainer}>
-          <Svg width="300" height="300" viewBox="0 0 300 300">
+          <Svg width={Math.min(width * 0.65, 280)} height={Math.min(width * 0.65, 280)} viewBox="0 0 300 300">
 
             <Circle
               cx="150"
@@ -171,8 +169,8 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#E6B3FF',
-    paddingTop: 80,
-    paddingBottom: 20,
+    paddingTop: Math.round(height * 0.08),
+    paddingBottom: Math.round(height * 0.025),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -183,15 +181,15 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 35,
-    paddingTop: 26,
+    paddingHorizontal: Math.round(width * 0.09),
+    paddingTop: Math.round(height * 0.028),
     position: 'relative',
   },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: Math.round(height * 0.018),
     position: 'relative',
   },
   pageTitle: {
@@ -206,13 +204,13 @@ const styles = StyleSheet.create({
   chartContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 8,
-    marginBottom: 25,
+    marginVertical: Math.round(height * 0.008),
+    marginBottom: Math.round(height * 0.025),
     position: 'relative',
   },
   chartPercentage: {
     position: 'absolute',
-    fontSize: 37,
+    fontSize: Math.round(width * 0.085),
     fontWeight: '600',
     color: '#000',
   },
@@ -224,8 +222,8 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
+    paddingVertical: Math.round(height * 0.022),
+    paddingHorizontal: Math.round(width * 0.05),
     alignItems: 'center',
     justifyContent: 'space-between',
   },
@@ -247,8 +245,8 @@ const styles = StyleSheet.create({
   tableRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 11,
-    paddingHorizontal: 20,
+    paddingVertical: Math.round(height * 0.014),
+    paddingHorizontal: Math.round(width * 0.05),
     justifyContent: 'space-between',
   },
   dotColumn: {
