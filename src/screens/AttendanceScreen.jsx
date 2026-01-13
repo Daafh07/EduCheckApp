@@ -13,6 +13,8 @@ import Svg, { Path, Circle, Defs, LinearGradient, Stop, Rect } from 'react-nativ
 
 const { height, width } = Dimensions.get('window');
 
+import { useTheme } from '../ThemeContext';
+
 const AttendanceScreen = ({ onNavigateToSettings }) => {
   const attendanceData = [
     { day: 'Mon', date: 'Dec 15', status: 'Present', color: '#E3A6FF' },
