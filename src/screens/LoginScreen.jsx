@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: Math.round(width * 0.09),
-    paddingTop: Math.round(height * 0.028),
+    paddingTop: Math.round(height * 0.08),
     position: 'relative',
   },
   loginCard: {
