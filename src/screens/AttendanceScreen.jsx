@@ -17,6 +17,8 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const { height, width } = Dimensions.get('window');
 
+import { useTheme } from '../ThemeContext';
+
 const AttendanceScreen = ({ onNavigateToSettings }) => {
   const [selectedDay, setSelectedDay] = React.useState(null);
   const [noteExpanded, setNoteExpanded] = React.useState(false);
