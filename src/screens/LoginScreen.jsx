@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  StatusBar,
-  Platform,
-  Dimensions,
+    View,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    StyleSheet,
+    StatusBar, Dimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../ThemeContext';
@@ -113,6 +111,7 @@ const LoginScreen = ({ onLogin }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FCF5FF',
   },
   header: {
     paddingTop: Platform.OS === 'ios' ? Math.round(height * 0.08) : Math.round(height * 0.04),
@@ -127,20 +126,20 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: Math.round(width * 0.09),
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingTop: Math.round(height * 0.08),
+    position: 'relative',
   },
   loginCard: {
     width: '100%',
-    maxWidth: Math.round(width * 0.92),
-    padding: Math.round(width * 0.08),
+    maxWidth: 369,
+    padding: 20,
     borderRadius: 31,
   },
   loginTitle: {
     textAlign: 'center',
     fontSize: Math.round(width * 0.07),
     fontWeight: '600',
-    marginBottom: Math.round(height * 0.008),
+    marginBottom: 12,
   },
   divider: {
     width: '100%',
@@ -154,7 +153,8 @@ const styles = StyleSheet.create({
   formLabel: {
     fontSize: Math.round(width * 0.04),
     fontWeight: '600',
-    marginBottom: Math.round(height * 0.01),
+    marginBottom: 8,
+    marginLeft: 20,
   },
   inputWrapper: {
     position: 'relative',
@@ -190,8 +190,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Math.round(width * 0.03),
-    marginTop: Math.round(height * 0.025),
+    gap: 12,
   },
   loginButtonText: {
     fontSize: Math.round(width * 0.04),
