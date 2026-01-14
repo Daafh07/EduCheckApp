@@ -6,12 +6,31 @@ import {
   StatusBar,
   Image,
   ScrollView,
+  Pressable,
   Platform,
-  Dimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-const { height } = Dimensions.get('window');
+/* =========================
+   THEME (root colors)
+========================= */
+const lightTheme = {
+  background: '#FCF5FF',
+  header: '#E6B3FF',
+  card: '#F4DCFF',
+  text: '#000000',
+  divider: '#A27CB3',
+  hover: 'rgba(0,0,0,0.06)',
+};
+
+const darkTheme = {
+  background: '#121212',
+  header: '#1E1E1E',
+  card: '#242424',
+  text: '#FFFFFF',
+  divider: '#3A3A3A',
+  hover: 'rgba(255,255,255,0.08)',
+};
 
 const SettingsScreen = ({ onNavigateBack, onLogout }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -139,123 +158,108 @@ const SettingsScreen = ({ onNavigateBack, onLogout }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FCF5FF',
-  },
-  header: {
-    backgroundColor: '#E6B3FF',
-    paddingTop: Platform.OS === 'ios' ? Math.round(height * 0.08) : Math.round(height * 0.04),
-    paddingBottom: Math.round(height * 0.025),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  appTitle: {
-    color: '#000',
-    textAlign: 'center',
-    fontSize: 37,
-    fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 35,
-    paddingTop: 26,
-  },
-  pageHeader: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 25,
-    position: 'relative',
-  },
-  pageTitle: {
-    color: '#000',
-    fontSize: 28,
-    fontWeight: '600',
-  },
-  backButton: {
-    position: 'absolute',
-    left: -6,
-  },
-  backButtonText: {
-    color: '#000',
-    fontSize: 28,
-    fontWeight: '600',
-  },
-  profileCard: {
-    padding: 25,
-    borderRadius: 31,
-    backgroundColor: '#F4DCFF',
-    marginBottom: 28,
-  },
-  profileInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    marginBottom: 23,
-  },
-  profileAvatar: {
-    width: 65,
-    height: 65,
-    borderRadius: 65,
-  },
-  profileDetails: {
-    flex: 1,
-  },
-  profileName: {
-    color: '#000',
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  profileRole: {
-    color: '#000',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  divider: {
-    width: '100%',
-    height: 1,
-    backgroundColor: '#A27CB3',
-    marginVertical: 23,
-    opacity: 0.5,
-  },
-  dividerTop: {
-    width: '100%',
-    height: 1,
-    backgroundColor: '#A27CB3',
-    marginBottom: 22,
-    opacity: 0.5,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  logoutButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  settingsCard: {
-    padding: 22,
-    paddingHorizontal: 30,
-    borderRadius: 31,
-    backgroundColor: '#F4DCFF',
-    marginBottom: 40,
-  },
-  settingsOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingVertical: 3,
-  },
-  optionLabel: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+/* =========================
+   STYLES
+========================= */
+const createStyles = (theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    header: {
+      backgroundColor: theme.header,
+      paddingTop: 80,
+      paddingBottom: 20,
+      alignItems: 'center',
+    },
+    appTitle: {
+      color: theme.text,
+      fontSize: 37,
+      fontWeight: '600',
+    },
+    content: {
+      paddingHorizontal: 35,
+      paddingTop: 26,
+    },
+    pageHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 25,
+    },
+    pageTitle: {
+      color: theme.text,
+      fontSize: 28,
+      fontWeight: '600',
+    },
+    backButton: {
+      position: 'absolute',
+      left: 0,
+    },
+    backButtonText: {
+      color: theme.text,
+      fontSize: 28,
+    },
+    profileCard: {
+      backgroundColor: theme.card,
+      padding: 25,
+      borderRadius: 31,
+      marginBottom: 28,
+    },
+    profileInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+    },
+    profileAvatar: {
+      width: 65,
+      height: 65,
+      borderRadius: 65,
+    },
+    profileName: {
+      color: theme.text,
+      fontSize: 18,
+      fontWeight: '600',
+    },
+    profileRole: {
+      color: theme.text,
+      fontSize: 14,
+    },
+    settingsCard: {
+      backgroundColor: theme.card,
+      padding: 22,
+      borderRadius: 31,
+      marginBottom: 40,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: theme.divider,
+      opacity: 0.5,
+      marginVertical: 20,
+    },
+    dividerTop: {
+      height: 1,
+      backgroundColor: theme.divider,
+      opacity: 0.5,
+      marginBottom: 20,
+    },
+    rowButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      padding: 8,
+      borderRadius: 12,
+      ...(Platform.OS === 'web' && { cursor: 'pointer' }),
+    },
+    rowText: {
+      color: theme.text,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    hover: {
+      backgroundColor: theme.hover,
+    },
+  });
 
 export default SettingsScreen;
