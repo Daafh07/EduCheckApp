@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { StatusBar } from 'expo-status-bar';
 import LoginScreen from './src/screens/LoginScreen';
 import AttendanceScreen from './src/screens/AttendanceScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import { ThemeProvider } from './ThemeContext';
 
-export default function App() {
+function AppContent() {
   const [currentScreen, setCurrentScreen] = useState('login'); // 'login', 'attendance', 'settings'
 
   const handleLogin = (data) => {
@@ -25,30 +25,25 @@ export default function App() {
   };
 
   if (currentScreen === 'login') {
-    return (
-      <>
-        <LoginScreen onLogin={handleLogin} />
-        <StatusBar style="dark" />
-      </>
-    );
+    return <LoginScreen onLogin={handleLogin} />;
   }
 
   if (currentScreen === 'settings') {
     return (
-      <>
-        <SettingsScreen
-          onNavigateBack={handleNavigateBack}
-          onLogout={handleLogout}
-        />
-        <StatusBar style="dark" />
-      </>
+      <SettingsScreen
+        onNavigateBack={handleNavigateBack}
+        onLogout={handleLogout}
+      />
     );
   }
 
+  return <AttendanceScreen onNavigateToSettings={handleNavigateToSettings} />;
+}
+
+export default function App() {
   return (
-    <>
-      <AttendanceScreen onNavigateToSettings={handleNavigateToSettings} />
-      <StatusBar style="dark" />
-    </>
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }

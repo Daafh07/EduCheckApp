@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,11 @@ import {
   Pressable,
   Platform,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { Feather } from '@expo/vector-icons';
+import { useTheme } from '../../ThemeContext';
 
 /* =========================
    THEME (root colors)
-========================= */
 const lightTheme = {
   background: '#FCF5FF',
   header: '#E6B3FF',
@@ -33,36 +33,33 @@ const darkTheme = {
 };
 
 const SettingsScreen = ({ onNavigateBack, onLogout }) => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [hovered, setHovered] = useState(null);
-
-  const theme = isDarkMode ? darkTheme : lightTheme;
-  const styles = createStyles(theme);
+  const { isDarkMode, toggleDarkMode, theme } = useTheme();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
 
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.appTitle}>Edu Check</Text>
+      <View style={[styles.header, { backgroundColor: theme.header }]}>
+        <Text style={[styles.appTitle, { color: theme.text }]}>Edu Check</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Page header */}
         <View style={styles.pageHeader}>
-          <Pressable
+          <TouchableOpacity
             onPress={onNavigateBack}
             style={styles.backButton}
+            activeOpacity={0.6}
           >
-            <Text style={styles.backButtonText}>←</Text>
-          </Pressable>
+            <Text style={[styles.backButtonText, { color: theme.text }]}>←</Text>
+          </TouchableOpacity>
 
-          <Text style={styles.pageTitle}>Settings</Text>
+          <Text style={[styles.pageTitle, { color: theme.text }]}>Settings</Text>
         </View>
 
         {/* Profile card */}
-        <View style={styles.profileCard}>
+        <View style={[styles.profileCard, { backgroundColor: theme.card }]}>
           <View style={styles.profileInfo}>
             <Image
               source={{
@@ -72,95 +69,144 @@ const SettingsScreen = ({ onNavigateBack, onLogout }) => {
             />
 
             <View>
-              <Text style={styles.profileName}>Cornelis de Witt</Text>
-              <Text style={styles.profileRole}>Student</Text>
+              <Text style={[styles.profileName, { color: theme.text }]}>Cornelis de Witt</Text>
+              <Text style={[styles.profileRole, { color: theme.text }]}>Student</Text>
             </View>
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
           {/* Logout */}
-          <Pressable
+          <TouchableOpacity
             onPress={onLogout}
-            onHoverIn={() => setHovered('logout')}
-            onHoverOut={() => setHovered(null)}
-            style={[
-              styles.rowButton,
-              hovered === 'logout' && styles.hover,
-            ]}
+            style={styles.rowButton}
+            activeOpacity={0.6}
           >
-            <Svg width="24" height="24" viewBox="0 0 24 24">
-              <Path
-                d="M21 12H15M9 3C11.209 3 13 4.791 13 7C13 9.209 11.209 11 9 11C6.791 11 5 9.209 5 7C5 4.791 6.791 3 9 3ZM3 21C3 17.686 5.686 15 9 15C12.314 15 15 17.686 15 21"
-                stroke={theme.text}
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
-            <Text style={styles.rowText}>Logout</Text>
-          </Pressable>
+            <Feather name="log-out" size={Math.round(width * 0.06)} color={theme.text} />
+            <Text style={[styles.rowText, { color: theme.text }]}>Logout</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Settings card */}
-        <View style={styles.settingsCard}>
-          <View style={styles.dividerTop} />
-
+        <View style={[styles.settingsCard, { backgroundColor: theme.card }]}>
           {/* Dark mode */}
-          <Pressable
-            onPress={() => setIsDarkMode(!isDarkMode)}
-            onHoverIn={() => setHovered('dark')}
-            onHoverOut={() => setHovered(null)}
-            style={[
-              styles.rowButton,
-              hovered === 'dark' && styles.hover,
-            ]}
+          <TouchableOpacity
+            onPress={toggleDarkMode}
+            style={styles.rowButton}
+            activeOpacity={0.6}
           >
-            <Svg width="24" height="24" viewBox="0 0 24 24">
-              <Path
-                d="M21 12.79A9 9 0 1111.21 3A7 7 0 0021 12.79z"
-                stroke={theme.text}
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
-            <Text style={styles.rowText}>Dark mode</Text>
-          </Pressable>
+            <Feather name={isDarkMode ? 'sun' : 'moon'} size={Math.round(width * 0.06)} color={theme.text} />
+            <Text style={[styles.rowText, { color: theme.text }]}>Dark mode</Text>
+          </TouchableOpacity>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
           {/* Language */}
-          <Pressable
-            onHoverIn={() => setHovered('language')}
-            onHoverOut={() => setHovered(null)}
-            style={[
-              styles.rowButton,
-              hovered === 'language' && styles.hover,
-            ]}
+          <TouchableOpacity
+            style={styles.rowButton}
+            activeOpacity={0.6}
           >
-            <Svg width="24" height="24" viewBox="0 0 24 24">
-              <Path
-                fill={theme.text}
-                d="M4 3h16a1 1 0 011 1v16a1 1 0 01-1 1H4
-       a1 1 0 01-1-1V4a1 1 0 011-1zm4.5 5
-       h2.2l2.1 6h-1.9l-.4-1.3H8.5L8.1 14H6.3
-       l2.2-6zm.3 3.6L9.1 9.8 8.5 11.6h1.3z
-       M14.5 8h3v1.4h-1.1v1.7h1.4v1.4h-1.4
-       v2.3h-1.5v-2.3h-1.4v-1.4h1.4V9.4h-1.1V8z"
-              />
-            </Svg>
-            <Text style={styles.rowText}>Language</Text>
-          </Pressable>
+            <Feather name="globe" size={Math.round(width * 0.06)} color={theme.text} />
+            <Text style={[styles.rowText, { color: theme.text }]}>Language</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
   );
 };
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    paddingTop: Platform.OS === 'ios' ? Math.round(height * 0.08) : Math.round(height * 0.04),
+    paddingBottom: Math.round(height * 0.025),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appTitle: {
+    textAlign: 'center',
+    fontSize: 37,
+    fontWeight: '600',
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: Math.round(width * 0.09),
+    paddingTop: Math.round(height * 0.03),
+  },
+  pageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Math.round(height * 0.03),
+    position: 'relative',
+  },
+  pageTitle: {
+    fontSize: Math.round(width * 0.07),
+    fontWeight: '600',
+  },
+  backButton: {
+    position: 'absolute',
+    left: Math.round(width * -0.015),
+  },
+  backButtonText: {
+    fontSize: Math.round(width * 0.07),
+    fontWeight: '600',
+  },
+  profileCard: {
+    padding: Math.round(width * 0.06),
+    borderRadius: 31,
+    marginBottom: Math.round(height * 0.032),
+  },
+  profileInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Math.round(width * 0.035),
+    marginBottom: 0,
+  },
+  profileAvatar: {
+    width: Math.round(width * 0.16),
+    height: Math.round(width * 0.16),
+    borderRadius: Math.round(width * 0.16),
+  },
+  profileDetails: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: Math.round(width * 0.045),
+    fontWeight: '600',
+    marginBottom: Math.round(height * 0.005),
+  },
+  profileRole: {
+    fontSize: Math.round(width * 0.035),
+    fontWeight: '600',
+  },
+  divider: {
+    width: '100%',
+    height: 1,
+    marginVertical: Math.round(height * 0.018),
+    opacity: 0.5,
+  },
+  rowButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Math.round(width * 0.025),
+    paddingVertical: Math.round(height * 0.005),
+  },
+  rowText: {
+    fontSize: Math.round(width * 0.04),
+    fontWeight: '600',
+  },
+  settingsCard: {
+    padding: Math.round(width * 0.055),
+    paddingHorizontal: Math.round(width * 0.075),
+    borderRadius: 31,
+    marginBottom: Math.round(height * 0.05),
+  },
+});
 /* =========================
    STYLES
-========================= */
 const createStyles = (theme) =>
   StyleSheet.create({
     container: {
