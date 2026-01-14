@@ -9,11 +9,11 @@ export const Colors = {
   },
 
   dark: {
-    background: '#121212',
-    header: '#1F1F1F',
-    card: '#1E1E1E',
+    background: '#2b2b2b',
+    header: '#7d379d',
+    card: '#7d379d',
     textPrimary: '#FFFFFF',
     textSecondary: '#CCCCCC',
-    divider: '#555555',
+    divider: '#D373FF',
   },
 };
