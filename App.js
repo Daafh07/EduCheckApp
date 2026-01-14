@@ -3,6 +3,7 @@ import LoginScreen from './src/screens/LoginScreen';
 import AttendanceScreen from './src/screens/AttendanceScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { ThemeProvider } from './ThemeContext';
+import { LanguageProvider } from './LanguageContext';
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState('login'); // 'login', 'attendance', 'settings'
@@ -43,7 +44,9 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <LanguageProvider>
+        <AppContent />
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

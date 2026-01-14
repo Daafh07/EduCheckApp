@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import Svg, { Path, Circle, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useTheme } from '../../ThemeContext';
+import { useLanguage } from '../../LanguageContext';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -18,6 +19,7 @@ const { height, width } = Dimensions.get('window');
 
 const AttendanceScreen = ({ onNavigateToSettings }) => {
   const { isDarkMode, theme } = useTheme();
+  const { t, language } = useLanguage();
   const [selectedDay, setSelectedDay] = React.useState(null);
   const [noteExpanded, setNoteExpanded] = React.useState(false);
   const [displayPercentage, setDisplayPercentage] = React.useState(0);
@@ -167,17 +169,17 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
   const attendanceData = [
     { day: 'Mon', date: 'Dec 15', status: 'Present', color: '#E3A6FF', time: '08:30', reason: '', note: '' },
     { day: 'Fri', date: 'Dec 12', status: 'Present', color: '#E3A6FF', time: '08:25', reason: '', note: '' },
-    { day: 'Thu', date: 'Dec 11', status: 'Late', color: '#5182FF', time: '09:42', reason: 'Doktor afspraak', note: 'Leerling had een afspraak staan bij de doktor, hierdoor was de leerling iets later op school dan normaal. Dit is geen probleem.\n\n-Ronald' },
+    { day: 'Thu', date: 'Dec 11', status: 'Late', color: '#5182FF', time: '09:42', reason: 'Doctor appointment', note: 'Student had a doctor appointment, which caused them to arrive a bit later than usual. This is not a problem.\n\n-Ronald' },
     { day: 'Wed', date: 'Dec 10', status: 'Present', color: '#E3A6FF', time: '08:28', reason: '', note: '' },
-    { day: 'Tue', date: 'Dec 9', status: 'Absent', color: '#DE0000', time: '-', reason: 'Ziek', note: 'Leerling was ziek thuis.' },
-    { day: 'Mon', date: 'Dec 8', status: 'Absent', color: '#DE0000', time: '-', reason: 'Ziek', note: 'Leerling was ziek thuis.' },
+    { day: 'Tue', date: 'Dec 9', status: 'Absent', color: '#DE0000', time: '-', reason: 'Sick', note: 'Student was sick at home.' },
+    { day: 'Mon', date: 'Dec 8', status: 'Absent', color: '#DE0000', time: '-', reason: 'Sick', note: 'Student was sick at home.' },
     { day: 'Fri', date: 'Dec 5', status: 'Present', color: '#E3A6FF', time: '08:32', reason: '', note: '' },
-    { day: 'Thu', date: 'Dec 4', status: 'Late', color: '#5182FF', time: '09:15', reason: 'Verkeer', note: 'File op de snelweg.' },
+    { day: 'Thu', date: 'Dec 4', status: 'Late', color: '#5182FF', time: '09:15', reason: 'Traffic', note: 'Traffic jam on the highway.' },
     { day: 'Wed', date: 'Dec 3', status: 'Present', color: '#E3A6FF', time: '08:27', reason: '', note: '' },
     { day: 'Tue', date: 'Dec 2', status: 'Present', color: '#E3A6FF', time: '08:29', reason: '', note: '' },
     { day: 'Mon', date: 'Dec 1', status: 'Present', color: '#E3A6FF', time: '08:26', reason: '', note: '' },
-    { day: 'Fri', date: 'Nov 28', status: 'Late', color: '#5182FF', time: '09:05', reason: 'Gemist bus', note: 'Bus gemist door wekker te laat.' },
-    { day: 'Thu', date: 'Nov 27', status: 'Late', color: '#5182FF', time: '08:50', reason: 'Verkeer', note: 'Vertraging door wegwerkzaamheden.' },
+    { day: 'Fri', date: 'Nov 28', status: 'Late', color: '#5182FF', time: '09:05', reason: 'Missed bus', note: 'Missed the bus because alarm went off late.' },
+    { day: 'Thu', date: 'Nov 27', status: 'Late', color: '#5182FF', time: '08:50', reason: 'Traffic', note: 'Delay due to road construction.' },
     { day: 'Wed', date: 'Nov 26', status: 'Present', color: '#E3A6FF', time: '08:31', reason: '', note: '' },
     { day: 'Tue', date: 'Nov 25', status: 'Present', color: '#E3A6FF', time: '08:24', reason: '', note: '' },
     { day: 'Mon', date: 'Nov 24', status: 'Present', color: '#E3A6FF', time: '08:30', reason: '', note: '' },
@@ -306,7 +308,7 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
 
             <View style={[styles.reasonSection, { backgroundColor: theme.card }]}>
               <Text style={[styles.reasonText, { color: theme.text }]}>
-                {selectedDay.reason ? `Reden: ${selectedDay.reason}` : 'Reden: -'}
+                {selectedDay.reason ? `${t.reason}: ${selectedDay.reason}` : `${t.reason}: -`}
               </Text>
             </View>
 
@@ -320,14 +322,14 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
               activeOpacity={selectedDay.note && selectedDay.note.split(' ').length > 10 ? 0.7 : 1}
               disabled={!selectedDay.note || selectedDay.note.split(' ').length <= 10}
             >
-              <Text style={[styles.noteLabel, { color: theme.text }]}>Opmerking:</Text>
+              <Text style={[styles.noteLabel, { color: theme.text }]}>{t.note}:</Text>
               <View style={[styles.noteBox, { backgroundColor: theme.inputBackground }]}>
                 <Text style={[styles.noteText, { color: theme.text }]}>
                   {selectedDay.note
                     ? (noteExpanded
                       ? selectedDay.note
                       : selectedDay.note.split(' ').length > 10
-                      ? selectedDay.note.split(' ').slice(0, 10).join(' ') + ' ...meer'
+                      ? selectedDay.note.split(' ').slice(0, 10).join(' ') + ' ' + t.more
                       : selectedDay.note)
                     : '-'}
                 </Text>
@@ -339,13 +341,13 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
 
           <View style={styles.tableHeader}>
             <View style={styles.headerDay}>
-              <Text style={[styles.headerText, { color: theme.text }]}>Day</Text>
+              <Text style={[styles.headerText, { color: theme.text }]}>{t.day}</Text>
             </View>
             <View style={styles.headerCol}>
-              <Text style={[styles.headerText, { color: theme.text }]}>Date</Text>
+              <Text style={[styles.headerText, { color: theme.text }]}>{t.date}</Text>
             </View>
             <View style={styles.headerCol}>
-              <Text style={[styles.headerText, { color: theme.text }]}>Status</Text>
+              <Text style={[styles.headerText, { color: theme.text }]}>{t.status}</Text>
             </View>
           </View>
 
@@ -375,13 +377,23 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
                         <View style={styles.dotColumn}>
                           <View style={[styles.colorDot, { backgroundColor: item.color }]} />
                         </View>
-                        <Text style={[styles.cellText, { color: theme.text }]}>{item.day}</Text>
+                        <Text style={[styles.cellText, { color: theme.text }]}>{(t.dayNames && t.dayNames[item.day]) || item.day}</Text>
                       </View>
                       <View style={styles.cellWrapper}>
-                        <Text style={[styles.cellText, { color: theme.text }]}>{item.date}</Text>
+                        <Text style={[styles.cellText, { color: theme.text }]}>{(() => {
+                          // try to parse date like 'Dec 15' or 'Dec 15' with year - fallback to original
+                          try {
+                            // If item.date contains a month name and day, append a year fallback
+                            const parsed = new Date(item.date);
+                            if (!isNaN(parsed)) {
+                              return new Intl.DateTimeFormat(language, { month: 'short', day: 'numeric' }).format(parsed);
+                            }
+                          } catch (e) {}
+                          return item.date;
+                        })()}</Text>
                       </View>
                       <View style={styles.cellWrapper}>
-                        <Text style={[styles.cellText, { color: theme.text }]}>{item.status}</Text>
+                        <Text style={[styles.cellText, { color: theme.text }]}>{t[item.status.toLowerCase()] || item.status}</Text>
                       </View>
                     </TouchableOpacity>
                   </Animated.View>
@@ -418,7 +430,7 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
 
       <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
         <View style={styles.titleRow}>
-          <Text style={[styles.pageTitle, { color: theme.text }]}>Attendance</Text>
+          <Text style={[styles.pageTitle, { color: theme.text }]}>{t.attendance}</Text>
           <TouchableOpacity onPress={onNavigateToSettings} style={styles.settingsButton}>
             <Svg width="28" height="28" viewBox="0 0 24 24" fill="none">
               <Path
@@ -543,13 +555,13 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
         <View style={[styles.dividerLine, { backgroundColor: theme.divider }]} />
         <View style={styles.tableHeader}>
           <View style={styles.headerDay}>
-            <Text style={[styles.headerText, { color: theme.text }]}>Day</Text>
+            <Text style={[styles.headerText, { color: theme.text }]}>{t.day}</Text>
           </View>
           <View style={styles.headerCol}>
-            <Text style={[styles.headerText, { color: theme.text }]}>Date</Text>
+            <Text style={[styles.headerText, { color: theme.text }]}>{t.date}</Text>
           </View>
           <View style={styles.headerCol}>
-            <Text style={[styles.headerText, { color: theme.text }]}>Status</Text>
+            <Text style={[styles.headerText, { color: theme.text }]}>{t.status}</Text>
           </View>
         </View>
 
@@ -579,13 +591,23 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
                       <View style={styles.dotColumn}>
                         <View style={[styles.colorDot, { backgroundColor: item.color }]} />
                       </View>
-                      <Text style={[styles.cellText, { color: theme.text }]}>{item.day}</Text>
+                      <Text style={[styles.cellText, { color: theme.text }]}>{(t.dayNames && t.dayNames[item.day]) || item.day}</Text>
                     </View>
                     <View style={styles.cellWrapper}>
-                      <Text style={[styles.cellText, { color: theme.text }]}>{item.date}</Text>
+                      <Text style={[styles.cellText, { color: theme.text }]}>{(() => {
+                        // try to parse date like 'Dec 15' or 'Dec 15' with year - fallback to original
+                        try {
+                          // If item.date contains a month name and day, append a year fallback
+                          const parsed = new Date(item.date);
+                          if (!isNaN(parsed)) {
+                            return new Intl.DateTimeFormat(language, { month: 'short', day: 'numeric' }).format(parsed);
+                          }
+                        } catch (e) {}
+                        return item.date;
+                      })()}</Text>
                     </View>
                     <View style={styles.cellWrapper}>
-                      <Text style={[styles.cellText, { color: theme.text }]}>{item.status}</Text>
+                      <Text style={[styles.cellText, { color: theme.text }]}>{t[item.status.toLowerCase()] || item.status}</Text>
                     </View>
                   </TouchableOpacity>
                 </Animated.View>

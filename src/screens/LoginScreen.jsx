@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
-    StatusBar, Dimensions,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  StatusBar,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../ThemeContext';
+import { useLanguage } from '../../LanguageContext';
 
 const { height, width } = Dimensions.get('window');
 
@@ -17,6 +20,7 @@ const LoginScreen = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { isDarkMode, theme } = useTheme();
+  const { t } = useLanguage();
 
   const handleSubmit = () => {
     if (onLogin) {
@@ -29,16 +33,16 @@ const LoginScreen = ({ onLogin }) => {
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
 
       <View style={[styles.header, { backgroundColor: theme.header }]}>
-        <Text style={[styles.appTitle, { color: theme.text }]}>Edu Check</Text>
+        <Text style={[styles.appTitle, { color: theme.text }]}>{t.appName}</Text>
       </View>
 
       <View style={styles.content}>
         <View style={[styles.loginCard, { backgroundColor: theme.card }]}>
-          <Text style={[styles.loginTitle, { color: theme.text }]}>Login</Text>
+          <Text style={[styles.loginTitle, { color: theme.text }]}>{t.login}</Text>
           <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
           <View style={styles.formGroup}>
-            <Text style={[styles.formLabel, { color: theme.text }]}>School</Text>
+            <Text style={[styles.formLabel, { color: theme.text }]}>{t.school}</Text>
             <View style={styles.inputWrapper}>
               <Svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={styles.inputIcon}>
                 <Path
@@ -51,7 +55,7 @@ const LoginScreen = ({ onLogin }) => {
               </Svg>
               <TextInput
                 style={[styles.formInputWithIcon, { backgroundColor: theme.inputBackground, color: theme.inputText }]}
-                placeholder="School"
+                placeholder={t.school}
                 placeholderTextColor={theme.placeholderText}
                 value={school}
                 onChangeText={setSchool}
@@ -60,7 +64,7 @@ const LoginScreen = ({ onLogin }) => {
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={[styles.formLabel, { color: theme.text }]}>Student Mail</Text>
+            <Text style={[styles.formLabel, { color: theme.text }]}>{t.studentMail}</Text>
             <View style={styles.inputWrapper}>
               <TextInput
                 style={[styles.formInput, { backgroundColor: theme.inputBackground, color: theme.inputText }]}
@@ -75,11 +79,11 @@ const LoginScreen = ({ onLogin }) => {
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={[styles.formLabel, { color: theme.text }]}>Education Password</Text>
+            <Text style={[styles.formLabel, { color: theme.text }]}>{t.educationPassword}</Text>
             <View style={styles.inputWrapper}>
               <TextInput
                 style={[styles.formInput, { backgroundColor: theme.inputBackground, color: theme.inputText }]}
-                placeholder="password"
+                placeholder={t.educationPassword}
                 placeholderTextColor={theme.placeholderText}
                 value={password}
                 onChangeText={setPassword}
@@ -91,7 +95,7 @@ const LoginScreen = ({ onLogin }) => {
           <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
           <TouchableOpacity style={[styles.loginButton, { backgroundColor: theme.inputBackground }]} onPress={handleSubmit}>
-            <Text style={[styles.loginButtonText, { color: theme.text }]}>Login</Text>
+            <Text style={[styles.loginButtonText, { color: theme.text }]}>{t.login}</Text>
             <Svg width="21" height="21" viewBox="0 0 21 21" fill="none">
               <Path
                 d="M12.25 4.375L18.375 10.5M18.375 10.5L12.25 16.625M18.375 10.5H2.625"
@@ -111,7 +115,6 @@ const LoginScreen = ({ onLogin }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FCF5FF',
   },
   header: {
     paddingTop: Platform.OS === 'ios' ? Math.round(height * 0.08) : Math.round(height * 0.04),
@@ -127,19 +130,19 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: Math.round(width * 0.09),
     paddingTop: Math.round(height * 0.08),
-    position: 'relative',
+    alignItems: 'center',
   },
   loginCard: {
     width: '100%',
     maxWidth: 369,
-    padding: 20,
+    padding: Math.round(width * 0.08),
     borderRadius: 31,
   },
   loginTitle: {
     textAlign: 'center',
     fontSize: Math.round(width * 0.07),
     fontWeight: '600',
-    marginBottom: 12,
+    marginBottom: Math.round(height * 0.008),
   },
   divider: {
     width: '100%',
@@ -153,8 +156,7 @@ const styles = StyleSheet.create({
   formLabel: {
     fontSize: Math.round(width * 0.04),
     fontWeight: '600',
-    marginBottom: 8,
-    marginLeft: 20,
+    marginBottom: Math.round(height * 0.01),
   },
   inputWrapper: {
     position: 'relative',
@@ -190,7 +192,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: Math.round(width * 0.03),
+    marginTop: Math.round(height * 0.025),
   },
   loginButtonText: {
     fontSize: Math.round(width * 0.04),
