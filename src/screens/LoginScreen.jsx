@@ -47,13 +47,17 @@ const LoginScreen = () => {
   }, []);
 
   const handleSubmit = async () => {
+    if (!selectedCourse) {
+      Alert.alert('Fout', 'Selecteer je school');
+      return;
+    }
     if (!email || !password) {
       Alert.alert('Fout', 'Vul je email en wachtwoord in');
       return;
     }
 
     setIsLoading(true);
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(email, password, selectedCourse.id);
     setIsLoading(false);
 
     if (error) {

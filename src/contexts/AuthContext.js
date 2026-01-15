@@ -30,8 +30,8 @@ export const AuthProvider = ({ children }) => {
     loadStoredUser();
   }, []);
 
-  // Inloggen met email en wachtwoord tegen students tabel
-  const signIn = async (email, password) => {
+  // Inloggen met email, wachtwoord en course_id tegen students tabel
+  const signIn = async (email, password, courseId) => {
     try {
       // Zoek student op basis van email en wachtwoord
       const { data, error } = await supabase
@@ -45,6 +45,14 @@ export const AuthProvider = ({ children }) => {
         return {
           data: null,
           error: { message: 'Ongeldige email of wachtwoord' },
+        };
+      }
+
+      // Valideer of de student bij de geselecteerde school hoort
+      if (data.course_id !== courseId) {
+        return {
+          data: null,
+          error: { message: 'Je bent niet ingeschreven bij deze school' },
         };
       }
 
