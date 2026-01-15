@@ -9,6 +9,8 @@ import {
   Dimensions,
   Platform,
   ActivityIndicator,
+  RefreshControl,
+  ScrollView,
 } from 'react-native';
 import Svg, { Path, Circle, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useTheme } from '../../ThemeContext';
@@ -36,6 +38,8 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
   const [notes, setNotes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(null);
 
   // Helper function to translate date like "Dec 15" to localized format
   const translateDate = (dateStr) => {
@@ -52,63 +56,87 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
   const fadeAnim = React.useRef(new Animated.Value(1)).current;
   const slideAnim = React.useRef(new Animated.Value(0)).current;
 
-  // Haal data op uit Supabase
-  useEffect(() => {
-    const fetchData = async () => {
-      // User is nu direct de student data uit de students tabel
-      if (!user) {
-        console.log('[AttendanceScreen] No user found');
-        return;
+  // Fetch data function (extracted for reuse)
+  const fetchAttendanceData = async (showLoadingIndicator = true) => {
+    if (!user) {
+      console.log('[AttendanceScreen] No user found');
+      return;
+    }
+
+    console.log('[AttendanceScreen] Fetching data for user:', user.full_name, 'badge:', user.badge_number);
+    
+    if (showLoadingIndicator) {
+      setIsLoading(true);
+    }
+    setError(null);
+
+    try {
+      // User bevat al de student data
+      setStudent(user);
+
+      // Haal aanwezigheidsdata op
+      if (user?.badge_number) {
+        const badgeStr = String(user.badge_number);
+        console.log('[AttendanceScreen] Looking for badge_number:', badgeStr);
+
+        const { data: attendance, error: attendanceError } = await getAttendanceByBadgeNumber(badgeStr);
+
+        console.log('[AttendanceScreen] Attendance response:', {
+          count: attendance?.length,
+          error: attendanceError,
+          firstRecord: attendance?.[0]
+        });
+
+        if (!attendanceError && attendance) {
+          const transformed = transformAttendanceData(attendance);
+          console.log('[AttendanceScreen] Transformed data:', transformed.length, 'records');
+          setAttendanceData(transformed);
+          setLastUpdate(new Date());
+        }
+      } else {
+        console.log('[AttendanceScreen] User has no badge_number');
       }
 
-      console.log('[AttendanceScreen] Fetching data for user:', user.full_name, 'badge:', user.badge_number);
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        // User bevat al de student data
-        setStudent(user);
-
-        // Haal aanwezigheidsdata op
-        if (user?.badge_number) {
-          // Probeer eerst met string, dan met nummer
-          const badgeStr = String(user.badge_number);
-          console.log('[AttendanceScreen] Looking for badge_number:', badgeStr, 'type:', typeof user.badge_number);
-
-          const { data: attendance, error: attendanceError } = await getAttendanceByBadgeNumber(badgeStr);
-
-          console.log('[AttendanceScreen] Attendance response:', {
-            count: attendance?.length,
-            error: attendanceError,
-            firstRecord: attendance?.[0]
-          });
-
-          if (!attendanceError && attendance) {
-            const transformed = transformAttendanceData(attendance);
-            console.log('[AttendanceScreen] Transformed data:', transformed.length, 'records');
-            setAttendanceData(transformed);
-          }
-        } else {
-          console.log('[AttendanceScreen] User has no badge_number');
+      // Haal notities op
+      if (user?.id) {
+        const { data: notesData } = await getNotesForStudent(user.id);
+        if (notesData) {
+          setNotes(notesData);
         }
-
-        // Haal notities op
-        if (user?.id) {
-          const { data: notesData } = await getNotesForStudent(user.id);
-          if (notesData) {
-            setNotes(notesData);
-          }
-        }
-      } catch (err) {
-        console.error('[AttendanceScreen] Error fetching data:', err);
-        setError(err.message);
-      } finally {
+      }
+    } catch (err) {
+      console.error('[AttendanceScreen] Error fetching data:', err);
+      setError(err.message);
+    } finally {
+      if (showLoadingIndicator) {
         setIsLoading(false);
       }
-    };
+      setRefreshing(false);
+    }
+  };
 
-    fetchData();
+  // Pull to refresh handler
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    fetchAttendanceData(false);
   }, [user]);
+
+  // Haal data op uit Supabase
+  useEffect(() => {
+    fetchAttendanceData(true);
+  }, [user]);
+
+  // Polling: refresh data elke 10 seconden
+  useEffect(() => {
+    if (!user?.badge_number) return;
+
+    const interval = setInterval(() => {
+      console.log('[AttendanceScreen] Auto-refresh (polling)');
+      fetchAttendanceData(false);
+    }, 10000); // 10 seconden
+
+    return () => clearInterval(interval);
+  }, [user?.badge_number]);
 
   // Real-time subscription voor live updates
   useEffect(() => {
@@ -118,8 +146,8 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
     console.log('[AttendanceScreen] Setting up real-time subscription for badge:', badgeStr);
 
     // Subscribe to changes in attendance_sessions for this student
-    const subscription = supabase
-      .channel('attendance-changes')
+    const channel = supabase
+      .channel(`attendance-changes-${badgeStr}`)
       .on(
         'postgres_changes',
         {
@@ -129,28 +157,66 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
           filter: `badge_number=eq.${badgeStr}`,
         },
         async (payload) => {
-          console.log('[AttendanceScreen] Real-time update received:', payload.eventType);
+          console.log('[AttendanceScreen] Real-time update received:', payload.eventType, payload);
 
           // Fetch fresh data when changes occur
-          const { data: attendance, error: attendanceError } = await getAttendanceByBadgeNumber(badgeStr);
-
-          if (!attendanceError && attendance) {
-            const transformed = transformAttendanceData(attendance);
-            console.log('[AttendanceScreen] Updated data:', transformed.length, 'records');
-            setAttendanceData(transformed);
-          }
+          await fetchAttendanceData(false);
         }
       )
-      .subscribe((status) => {
+      .subscribe((status, err) => {
         console.log('[AttendanceScreen] Subscription status:', status);
+        if (err) {
+          console.error('[AttendanceScreen] Subscription error:', err);
+        }
       });
 
     // Cleanup subscription on unmount
     return () => {
       console.log('[AttendanceScreen] Cleaning up subscription');
-      supabase.removeChannel(subscription);
+      supabase.removeChannel(channel);
     };
   }, [user?.badge_number]);
+
+  // Real-time subscription voor notes updates
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log('[AttendanceScreen] Setting up real-time subscription for notes, student_id:', user.id);
+
+    // Subscribe to changes in notes for this student
+    const notesChannel = supabase
+      .channel(`notes-changes-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'notes',
+          filter: `student_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          console.log('[AttendanceScreen] Real-time notes update received:', payload.eventType);
+
+          // Fetch fresh notes when changes occur
+          const { data: notesData } = await getNotesForStudent(user.id);
+          if (notesData) {
+            setNotes(notesData);
+          }
+        }
+      )
+      .subscribe((status, err) => {
+        console.log('[AttendanceScreen] Notes subscription status:', status);
+        if (err) {
+          console.error('[AttendanceScreen] Notes subscription error:', err);
+        }
+      });
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log('[AttendanceScreen] Cleaning up notes subscription');
+      supabase.removeChannel(notesChannel);
+    };
+  }, [user?.id]);
 
   // Animated values for chart
   const animatedPresentDash = React.useRef(new Animated.Value(0)).current;
@@ -618,6 +684,13 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
           </TouchableOpacity>
         </View>
 
+        {/* Last update indicator */}
+        {lastUpdate && (
+          <Text style={[styles.lastUpdateText, { color: theme.placeholderText }]}>
+            Laatst bijgewerkt: {lastUpdate.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        )}
+
         <View style={styles.chartContainer}>
           <Svg width={Math.min(width * 0.65, 280)} height={Math.min(width * 0.65, 280)} viewBox="0 0 300 300">
             <AnimatedCircle
@@ -737,6 +810,14 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
             data={filteredData}
             keyExtractor={(item, index) => index.toString()}
             contentContainerStyle={{ paddingBottom: 120 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={theme.text}
+                colors={[theme.text]}
+              />
+            }
             renderItem={({ item, index }) => {
               const rowAnim = getRowAnimation(index);
               return (
@@ -831,6 +912,13 @@ const styles = StyleSheet.create({
   settingsButton: {
     position: 'absolute',
     right: 0,
+  },
+  lastUpdateText: {
+    fontSize: 11,
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 8,
+    fontStyle: 'italic',
   },
   chartContainer: {
     alignItems: 'center',
