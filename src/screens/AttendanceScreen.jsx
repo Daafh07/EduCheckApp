@@ -55,15 +55,13 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
   const [statusFilter, setStatusFilter] = React.useState(null);
   const fadeAnim = React.useRef(new Animated.Value(1)).current;
   const slideAnim = React.useRef(new Animated.Value(0)).current;
+  const hasAnimatedOnce = React.useRef(false);
 
   // Fetch data function (extracted for reuse)
   const fetchAttendanceData = async (showLoadingIndicator = true) => {
     if (!user) {
-      console.log('[AttendanceScreen] No user found');
       return;
     }
-
-    console.log('[AttendanceScreen] Fetching data for user:', user.full_name, 'badge:', user.badge_number);
     
     if (showLoadingIndicator) {
       setIsLoading(true);
@@ -77,24 +75,14 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
       // Haal aanwezigheidsdata op
       if (user?.badge_number) {
         const badgeStr = String(user.badge_number);
-        console.log('[AttendanceScreen] Looking for badge_number:', badgeStr);
 
         const { data: attendance, error: attendanceError } = await getAttendanceByBadgeNumber(badgeStr);
 
-        console.log('[AttendanceScreen] Attendance response:', {
-          count: attendance?.length,
-          error: attendanceError,
-          firstRecord: attendance?.[0]
-        });
-
         if (!attendanceError && attendance) {
           const transformed = transformAttendanceData(attendance);
-          console.log('[AttendanceScreen] Transformed data:', transformed.length, 'records');
           setAttendanceData(transformed);
           setLastUpdate(new Date());
         }
-      } else {
-        console.log('[AttendanceScreen] User has no badge_number');
       }
 
       // Haal notities op
@@ -126,14 +114,13 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
     fetchAttendanceData(true);
   }, [user]);
 
-  // Polling: refresh data elke 10 seconden
+  // Polling: refresh data elke 30 seconden
   useEffect(() => {
     if (!user?.badge_number) return;
 
     const interval = setInterval(() => {
-      console.log('[AttendanceScreen] Auto-refresh (polling)');
       fetchAttendanceData(false);
-    }, 10000); // 10 seconden
+    }, 30000); // 30 seconden
 
     return () => clearInterval(interval);
   }, [user?.badge_number]);
@@ -143,7 +130,6 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
     if (!user?.badge_number) return;
 
     const badgeStr = String(user.badge_number);
-    console.log('[AttendanceScreen] Setting up real-time subscription for badge:', badgeStr);
 
     // Subscribe to changes in attendance_sessions for this student
     const channel = supabase
@@ -157,14 +143,11 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
           filter: `badge_number=eq.${badgeStr}`,
         },
         async (payload) => {
-          console.log('[AttendanceScreen] Real-time update received:', payload.eventType, payload);
-
           // Fetch fresh data when changes occur
           await fetchAttendanceData(false);
         }
       )
       .subscribe((status, err) => {
-        console.log('[AttendanceScreen] Subscription status:', status);
         if (err) {
           console.error('[AttendanceScreen] Subscription error:', err);
         }
@@ -172,7 +155,6 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
 
     // Cleanup subscription on unmount
     return () => {
-      console.log('[AttendanceScreen] Cleaning up subscription');
       supabase.removeChannel(channel);
     };
   }, [user?.badge_number]);
@@ -180,8 +162,6 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
   // Real-time subscription voor notes updates
   useEffect(() => {
     if (!user?.id) return;
-
-    console.log('[AttendanceScreen] Setting up real-time subscription for notes, student_id:', user.id);
 
     // Subscribe to changes in notes for this student
     const notesChannel = supabase
@@ -195,8 +175,6 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
           filter: `student_id=eq.${user.id}`,
         },
         async (payload) => {
-          console.log('[AttendanceScreen] Real-time notes update received:', payload.eventType);
-
           // Fetch fresh notes when changes occur
           const { data: notesData } = await getNotesForStudent(user.id);
           if (notesData) {
@@ -205,7 +183,6 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
         }
       )
       .subscribe((status, err) => {
-        console.log('[AttendanceScreen] Notes subscription status:', status);
         if (err) {
           console.error('[AttendanceScreen] Notes subscription error:', err);
         }
@@ -213,7 +190,6 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
 
     // Cleanup subscription on unmount
     return () => {
-      console.log('[AttendanceScreen] Cleaning up notes subscription');
       supabase.removeChannel(notesChannel);
     };
   }, [user?.id]);
@@ -296,6 +272,9 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
 
       fadeAnim.setValue(0);
       slideAnim.setValue(-50);
+
+      // Mark that we need to re-animate when returning to main view
+      hasAnimatedOnce.current = false;
 
       // Start all animations together
       Animated.parallel([
@@ -400,28 +379,39 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
       setDisplayPercentage(Math.round(value));
     });
 
-    Animated.parallel([
-      Animated.timing(animatedPresentDash, {
-        toValue: presentDash,
-        duration: 1200,
-        useNativeDriver: false,
-      }),
-      Animated.timing(animatedLateDash, {
-        toValue: lateDash,
-        duration: 1200,
-        useNativeDriver: false,
-      }),
-      Animated.timing(animatedAbsentDash, {
-        toValue: absentDash,
-        duration: 1200,
-        useNativeDriver: false,
-      }),
-      Animated.timing(animatedPercentage, {
-        toValue: presentPercentage,
-        duration: 1200,
-        useNativeDriver: false,
-      }),
-    ]).start();
+    // Only animate on first load, silently update values afterwards
+    if (!hasAnimatedOnce.current && displayData.length > 0) {
+      hasAnimatedOnce.current = true;
+      Animated.parallel([
+        Animated.timing(animatedPresentDash, {
+          toValue: presentDash,
+          duration: 1200,
+          useNativeDriver: false,
+        }),
+        Animated.timing(animatedLateDash, {
+          toValue: lateDash,
+          duration: 1200,
+          useNativeDriver: false,
+        }),
+        Animated.timing(animatedAbsentDash, {
+          toValue: absentDash,
+          duration: 1200,
+          useNativeDriver: false,
+        }),
+        Animated.timing(animatedPercentage, {
+          toValue: presentPercentage,
+          duration: 1200,
+          useNativeDriver: false,
+        }),
+      ]).start();
+    } else {
+      // Silent update without animation
+      animatedPresentDash.setValue(presentDash);
+      animatedLateDash.setValue(lateDash);
+      animatedAbsentDash.setValue(absentDash);
+      animatedPercentage.setValue(presentPercentage);
+      setDisplayPercentage(presentPercentage);
+    }
 
     // Cleanup listener on unmount
     return () => {
@@ -433,33 +423,43 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
   React.useEffect(() => {
     if (displayData.length === 0) return;
 
-    // Reset animations first
-    displayData.forEach((_, index) => {
-      const rowAnim = getRowAnimation(index);
-      rowAnim.opacity.setValue(0);
-      rowAnim.translateY.setValue(-30);
-    });
+    // Only animate on first load, keep rows visible on subsequent updates
+    if (!hasAnimatedOnce.current) {
+      // Reset animations first
+      displayData.forEach((_, index) => {
+        const rowAnim = getRowAnimation(index);
+        rowAnim.opacity.setValue(0);
+        rowAnim.translateY.setValue(-30);
+      });
 
-    // Then animate them in
-    const animations = displayData.map((_, index) => {
-      const rowAnim = getRowAnimation(index);
-      return Animated.parallel([
-        Animated.timing(rowAnim.opacity, {
-          toValue: 1,
-          duration: 400,
-          delay: index * 50,
-          useNativeDriver: true,
-        }),
-        Animated.timing(rowAnim.translateY, {
-          toValue: 0,
-          duration: 400,
-          delay: index * 50,
-          useNativeDriver: true,
-        }),
-      ]);
-    });
+      // Then animate them in
+      const animations = displayData.map((_, index) => {
+        const rowAnim = getRowAnimation(index);
+        return Animated.parallel([
+          Animated.timing(rowAnim.opacity, {
+            toValue: 1,
+            duration: 400,
+            delay: index * 50,
+            useNativeDriver: true,
+          }),
+          Animated.timing(rowAnim.translateY, {
+            toValue: 0,
+            duration: 400,
+            delay: index * 50,
+            useNativeDriver: true,
+          }),
+        ]);
+      });
 
-    Animated.stagger(0, animations).start();
+      Animated.stagger(0, animations).start();
+    } else {
+      // Silent update - ensure all rows are visible
+      displayData.forEach((_, index) => {
+        const rowAnim = getRowAnimation(index);
+        rowAnim.opacity.setValue(1);
+        rowAnim.translateY.setValue(0);
+      });
+    }
   }, [displayData]);
 
   // Toon loading indicator
@@ -702,7 +702,7 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
               strokeWidth={statusFilter === 'Present' ? 65 : 60}
               strokeDasharray={animatedPresentDash.interpolate({
                 inputRange: [0, circumference],
-                outputRange: [`0 ${circumference}`, `${circumference} ${circumference}`],
+                outputRange: [`0 ${circumference}`, `${circumference} 0`],
               })}
               strokeDashoffset="0"
               transform="rotate(-90 150 150)"
@@ -716,7 +716,7 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
               strokeWidth={statusFilter === 'Late' ? 65 : 60}
               strokeDasharray={animatedLateDash.interpolate({
                 inputRange: [0, circumference],
-                outputRange: [`0 ${circumference}`, `${circumference} ${circumference}`],
+                outputRange: [`0 ${circumference}`, `${circumference} 0`],
               })}
               strokeDashoffset={animatedPresentDash.interpolate({
                 inputRange: [0, circumference],
@@ -733,11 +733,11 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
               strokeWidth={statusFilter === 'Absent' ? 65 : 60}
               strokeDasharray={animatedAbsentDash.interpolate({
                 inputRange: [0, circumference],
-                outputRange: [`0 ${circumference}`, `${circumference} ${circumference}`],
+                outputRange: [`0 ${circumference}`, `${circumference} 0`],
               })}
               strokeDashoffset={Animated.add(animatedPresentDash, animatedLateDash).interpolate({
-                inputRange: [0, circumference * 2],
-                outputRange: [0, -circumference * 2],
+                inputRange: [0, circumference],
+                outputRange: [0, -circumference],
               })}
               transform="rotate(-90 150 150)"
             />
