@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Animated, Easing, Dimensions } from 'react-native';
+import { View, Animated, Easing, Dimensions, ActivityIndicator } from 'react-native';
 import Svg, { Circle, Ellipse, Rect, Defs, RadialGradient, LinearGradient, Stop, G, Path } from 'react-native-svg';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import LoginScreen from './src/screens/LoginScreen';
@@ -7,6 +7,7 @@ import AttendanceScreen from './src/screens/AttendanceScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { ThemeProvider, useTheme } from './ThemeContext';
 import { LanguageProvider } from './LanguageContext';
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -582,12 +583,17 @@ const FlashlightController = ({ enabled }) => {
 
 function AppContent() {
   const { isPartyMode, flashlightOn } = useTheme();
-  const [currentScreen, setCurrentScreen] = useState('login'); // 'login', 'attendance', 'settings'
+  const { user, loading, signOut } = useAuth();
+  const [currentScreen, setCurrentScreen] = useState('attendance'); // 'attendance', 'settings'
 
-  const handleLogin = (data) => {
-    console.log('Login data:', data);
-    setCurrentScreen('attendance');
-  };
+  // Toon loading indicator tijdens auth check
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
 
   const handleNavigateToSettings = () => {
     setCurrentScreen('settings');
@@ -597,13 +603,15 @@ function AppContent() {
     setCurrentScreen('attendance');
   };
 
-  const handleLogout = () => {
-    setCurrentScreen('login');
+  const handleLogout = async () => {
+    await signOut();
+    setCurrentScreen('attendance');
   };
 
   const renderScreen = () => {
-    if (currentScreen === 'login') {
-      return <LoginScreen onLogin={handleLogin} />;
+    // Als niet ingelogd, toon login scherm
+    if (!user) {
+      return <LoginScreen />;
     }
 
     if (currentScreen === 'settings') {
@@ -655,10 +663,12 @@ const styles = {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <LanguageProvider>
-        <AppContent />
-      </LanguageProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <AppContent />
+        </LanguageProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }

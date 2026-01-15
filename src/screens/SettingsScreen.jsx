@@ -345,7 +345,6 @@ const SettingsScreen = ({ onNavigateBack, onLogout }) => {
         </View>
       </ScrollView>
 
-      {/* Language modal overlay */}
       {langModalVisible && (
         <View style={[styles.modalOverlay, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.4)' }]} pointerEvents="box-none">
           <View style={[styles.modalContainer, { backgroundColor: isDarkMode ? '#3a3a3a' : theme.card }]}>
