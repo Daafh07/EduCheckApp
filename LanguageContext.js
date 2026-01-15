@@ -16,6 +16,20 @@ export const translations = {
       Sat: 'Sat',
       Sun: 'Sun',
     },
+    monthNames: {
+      Jan: 'Jan',
+      Feb: 'Feb',
+      Mar: 'Mar',
+      Apr: 'Apr',
+      May: 'May',
+      Jun: 'Jun',
+      Jul: 'Jul',
+      Aug: 'Aug',
+      Sep: 'Sep',
+      Oct: 'Oct',
+      Nov: 'Nov',
+      Dec: 'Dec',
+    },
 
     // Login
     login: 'Login',
@@ -70,6 +84,20 @@ export const translations = {
       Fri: 'Vr',
       Sat: 'Za',
       Sun: 'Zo',
+    },
+    monthNames: {
+      Jan: 'Jan',
+      Feb: 'Feb',
+      Mar: 'Mrt',
+      Apr: 'Apr',
+      May: 'Mei',
+      Jun: 'Jun',
+      Jul: 'Jul',
+      Aug: 'Aug',
+      Sep: 'Sep',
+      Oct: 'Okt',
+      Nov: 'Nov',
+      Dec: 'Dec',
     },
 
     // Login
@@ -126,6 +154,20 @@ export const translations = {
       Sat: 'Sa',
       Sun: 'So',
     },
+    monthNames: {
+      Jan: 'Jan',
+      Feb: 'Feb',
+      Mar: 'Mär',
+      Apr: 'Apr',
+      May: 'Mai',
+      Jun: 'Jun',
+      Jul: 'Jul',
+      Aug: 'Aug',
+      Sep: 'Sep',
+      Oct: 'Okt',
+      Nov: 'Nov',
+      Dec: 'Dez',
+    },
 
     // Login
     login: 'Anmelden',
@@ -180,6 +222,20 @@ export const translations = {
       Fri: 'Vie',
       Sat: 'Sáb',
       Sun: 'Dom',
+    },
+    monthNames: {
+      Jan: 'Ene',
+      Feb: 'Feb',
+      Mar: 'Mar',
+      Apr: 'Abr',
+      May: 'May',
+      Jun: 'Jun',
+      Jul: 'Jul',
+      Aug: 'Ago',
+      Sep: 'Sep',
+      Oct: 'Oct',
+      Nov: 'Nov',
+      Dec: 'Dic',
     },
 
     // Login
