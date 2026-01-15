@@ -2,18 +2,14 @@ import { supabase } from '../config/supabase';
 
 // ============ COURSES ============
 
-// Haal alle unieke courses op (voor dropdown in login)
+// Haal alle courses op uit de courses tabel (voor dropdown in login)
 export const getAllCourses = async () => {
   const { data, error } = await supabase
-    .from('students')
-    .select('course')
-    .not('course', 'is', null);
+    .from('courses')
+    .select('id, name, city')
+    .order('name', { ascending: true });
 
-  if (error) return { data: null, error };
-
-  // Haal unieke courses eruit
-  const uniqueCourses = [...new Set(data.map(item => item.course))].filter(Boolean);
-  return { data: uniqueCourses, error: null };
+  return { data, error };
 };
 
 // ============ STUDENTS ============
@@ -44,11 +40,29 @@ export const getStudentById = async (id) => {
 
 // Haal alle aanwezigheidsdata voor een student op basis van badge_number
 export const getAttendanceByBadgeNumber = async (badgeNumber) => {
-  const { data, error } = await supabase
+  // Probeer eerst als string
+  let { data, error } = await supabase
     .from('attendance_sessions')
     .select('*')
-    .eq('badge_number', badgeNumber)
+    .eq('badge_number', String(badgeNumber))
     .order('date', { ascending: false });
+
+  // Als geen resultaten, probeer als nummer (voor het geval de kolom integer is)
+  if ((!data || data.length === 0) && !isNaN(badgeNumber)) {
+    const result = await supabase
+      .from('attendance_sessions')
+      .select('*')
+      .eq('badge_number', Number(badgeNumber))
+      .order('date', { ascending: false });
+
+    data = result.data;
+    error = result.error;
+  }
+
+  console.log('[database] getAttendanceByBadgeNumber:', {
+    searchedFor: badgeNumber,
+    foundRecords: data?.length || 0
+  });
 
   return { data, error };
 };
@@ -341,21 +355,60 @@ export const calculateAttendanceStats = (attendanceData) => {
   };
 };
 
+// Status kleuren mapping
+const statusColors = {
+  present: '#E3A6FF',
+  late: '#5182FF',
+  absent: '#DE0000',
+  Present: '#E3A6FF',
+  Late: '#5182FF',
+  Absent: '#DE0000',
+};
+
 // Transformeer database data naar app formaat
 export const transformAttendanceData = (attendanceData) => {
-  if (!attendanceData) return [];
+  if (!attendanceData || attendanceData.length === 0) return [];
+
+  console.log('[transformAttendanceData] Raw data:', JSON.stringify(attendanceData, null, 2));
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   return attendanceData.map((session) => {
-    const date = new Date(session.date);
+    console.log('[transformAttendanceData] Processing session:', session);
+
+    // Handle invalid or missing date
+    let date;
+    if (session.date && session.date !== '0' && session.date !== 0) {
+      date = new Date(session.date);
+    } else {
+      // Fallback to created_at or current date
+      date = session.created_at ? new Date(session.created_at) : new Date();
+    }
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.log('[transformAttendanceData] Invalid date, using today');
+      date = new Date();
+    }
+
     const dayName = dayNames[date.getDay()];
     const monthName = monthNames[date.getMonth()];
     const dayNum = date.getDate();
 
-    // Bepaal status op basis van check-in tijd
-    const { status, color } = getAttendanceStatus(session.checked_in_at);
+    // Gebruik status uit database als beschikbaar, anders bereken op basis van check-in tijd
+    let status, color;
+    if (session.status) {
+      // Status komt direct uit de database (attendance_status enum)
+      const dbStatus = session.status.toLowerCase();
+      status = dbStatus.charAt(0).toUpperCase() + dbStatus.slice(1); // Capitalize
+      color = statusColors[dbStatus] || '#E3A6FF';
+    } else {
+      // Fallback: bereken status op basis van check-in tijd
+      const calculated = getAttendanceStatus(session.checked_in_at);
+      status = calculated.status;
+      color = calculated.color;
+    }
 
     // Formateer check-in tijd
     let time = '-';
@@ -376,6 +429,7 @@ export const transformAttendanceData = (attendanceData) => {
       time,
       checkedInAt: session.checked_in_at,
       checkedOutAt: session.checked_out_at,
+      noteId: session.note_id,
       reasonKey: '',
       noteKey: '',
     };

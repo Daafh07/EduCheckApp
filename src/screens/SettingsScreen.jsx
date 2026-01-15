@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   StatusBar,
-  Image,
   ScrollView,
   Platform,
   Dimensions,
@@ -16,12 +15,14 @@ import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../ThemeContext';
 import { useLanguage, languageNames } from '../../LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const { height, width } = Dimensions.get('window');
 
 const SettingsScreen = ({ onNavigateBack, onLogout }) => {
   const { isDarkMode, toggleDarkMode, theme, isPartyMode, startPartyMode } = useTheme();
   const { language, changeLanguage, t } = useLanguage();
+  const { user } = useAuth();
   const [langModalVisible, setLangModalVisible] = React.useState(false);
   const [profilePictureModalVisible, setProfilePictureModalVisible] = React.useState(false);
   const [languageEasterEggActive, setLanguageEasterEggActive] = React.useState(false);
@@ -292,16 +293,13 @@ const SettingsScreen = ({ onNavigateBack, onLogout }) => {
               onPressOut={handleProfilePicturePressOut}
               activeOpacity={0.8}
             >
-              <Image
-                source={{
-                  uri: 'https://api.builder.io/api/v1/image/assets/TEMP/a68693fb8aeee5e85741d318f7f389e2479ca8b4?width=130',
-                }}
-                style={styles.profileAvatar}
-              />
+              <View style={[styles.profileAvatarPlaceholder, { backgroundColor: theme.inputBackground }]}>
+                <Feather name="user" size={Math.round(width * 0.08)} color={theme.text} />
+              </View>
             </TouchableOpacity>
 
             <View>
-              <Text style={[styles.profileName, { color: theme.text }]}>Cornelis de Witt</Text>
+              <Text style={[styles.profileName, { color: theme.text }]}>{user?.full_name || '-'}</Text>
               <Text style={[styles.profileRole, { color: theme.text }]}>{t.student}</Text>
             </View>
           </View>
@@ -463,10 +461,12 @@ const styles = StyleSheet.create({
     gap: Math.round(width * 0.035),
     marginBottom: 0,
   },
-  profileAvatar: {
+  profileAvatarPlaceholder: {
     width: Math.round(width * 0.16),
     height: Math.round(width * 0.16),
     borderRadius: Math.round(width * 0.16),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   profileName: {
     fontSize: Math.round(width * 0.045),
