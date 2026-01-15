@@ -2,18 +2,14 @@ import { supabase } from '../config/supabase';
 
 // ============ COURSES ============
 
-// Haal alle unieke courses op (voor dropdown in login)
+// Haal alle courses op uit de courses tabel (voor dropdown in login)
 export const getAllCourses = async () => {
   const { data, error } = await supabase
-    .from('students')
-    .select('course')
-    .not('course', 'is', null);
+    .from('courses')
+    .select('id, name, city')
+    .order('name', { ascending: true });
 
-  if (error) return { data: null, error };
-
-  // Haal unieke courses eruit
-  const uniqueCourses = [...new Set(data.map(item => item.course))].filter(Boolean);
-  return { data: uniqueCourses, error: null };
+  return { data, error };
 };
 
 // ============ STUDENTS ============

@@ -22,7 +22,7 @@ import { getAllCourses } from '../services/database';
 const { height, width } = Dimensions.get('window');
 
 const LoginScreen = () => {
-  const [selectedCourse, setSelectedCourse] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState(null);
   const [courses, setCourses] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -90,7 +90,7 @@ const LoginScreen = () => {
               >
                 {coursesLoading
                   ? 'Laden...'
-                  : selectedCourse || t.school}
+                  : selectedCourse ? `${selectedCourse.name} (${selectedCourse.city})` : t.school}
               </Text>
               <Svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <Path
@@ -187,20 +187,23 @@ const LoginScreen = () => {
               </View>
             ) : (
               <ScrollView style={styles.dropdownList} showsVerticalScrollIndicator={false}>
-                {courses.map((course, index) => (
+                {courses.map((course) => (
                   <TouchableOpacity
-                    key={index}
+                    key={course.id}
                     style={[
                       styles.dropdownItem,
-                      { backgroundColor: selectedCourse === course ? theme.inputBackground : 'transparent' },
+                      { backgroundColor: selectedCourse?.id === course.id ? theme.inputBackground : 'transparent' },
                     ]}
                     onPress={() => {
                       setSelectedCourse(course);
                       setDropdownVisible(false);
                     }}
                   >
-                    <Text style={[styles.dropdownItemText, { color: theme.text }]}>{course}</Text>
-                    {selectedCourse === course && (
+                    <View>
+                      <Text style={[styles.dropdownItemText, { color: theme.text }]}>{course.name}</Text>
+                      <Text style={[styles.dropdownItemCity, { color: theme.placeholderText }]}>{course.city}</Text>
+                    </View>
+                    {selectedCourse?.id === course.id && (
                       <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                         <Path
                           d="M20 6L9 17L4 12"
@@ -350,6 +353,10 @@ const styles = StyleSheet.create({
   dropdownItemText: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  dropdownItemCity: {
+    fontSize: 13,
+    marginTop: 2,
   },
   emptyState: {
     padding: 20,
