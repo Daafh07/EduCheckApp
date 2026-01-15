@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,23 +8,56 @@ import {
   StatusBar,
   Platform,
   Dimensions,
+  Alert,
+  ActivityIndicator,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../ThemeContext';
 import { useLanguage } from '../../LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
+import { getAllCourses } from '../services/database';
 
 const { height, width } = Dimensions.get('window');
 
-const LoginScreen = ({ onLogin }) => {
-  const [school, setSchool] = useState('');
+const LoginScreen = () => {
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [courses, setCourses] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [dropdownVisible, setDropdownVisible] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { isDarkMode, theme } = useTheme();
   const { t } = useLanguage();
+  const { signIn } = useAuth();
 
-  const handleSubmit = () => {
-    if (onLogin) {
-      onLogin({ school, email, password });
+  // Haal courses op bij mount
+  useEffect(() => {
+    const fetchCourses = async () => {
+      setCoursesLoading(true);
+      const { data, error } = await getAllCourses();
+      if (!error && data) {
+        setCourses(data);
+      }
+      setCoursesLoading(false);
+    };
+    fetchCourses();
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!email || !password) {
+      Alert.alert('Fout', 'Vul je email en wachtwoord in');
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await signIn(email, password);
+    setIsLoading(false);
+
+    if (error) {
+      Alert.alert('Login mislukt', error.message);
     }
   };
 
@@ -41,10 +74,25 @@ const LoginScreen = ({ onLogin }) => {
           <Text style={[styles.loginTitle, { color: theme.text }]}>{t.login}</Text>
           <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
+          {/* Course Dropdown */}
           <View style={styles.formGroup}>
             <Text style={[styles.formLabel, { color: theme.text }]}>{t.school}</Text>
-            <View style={styles.inputWrapper}>
-              <Svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={styles.inputIcon}>
+            <TouchableOpacity
+              style={[styles.dropdownButton, { backgroundColor: theme.inputBackground }]}
+              onPress={() => setDropdownVisible(true)}
+              disabled={coursesLoading}
+            >
+              <Text
+                style={[
+                  styles.dropdownButtonText,
+                  { color: selectedCourse ? theme.inputText : theme.placeholderText },
+                ]}
+              >
+                {coursesLoading
+                  ? 'Laden...'
+                  : selectedCourse || t.school}
+              </Text>
+              <Svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <Path
                   d="M4 6L8 10L12 6"
                   stroke={theme.inputText}
@@ -53,16 +101,10 @@ const LoginScreen = ({ onLogin }) => {
                   strokeLinejoin="round"
                 />
               </Svg>
-              <TextInput
-                style={[styles.formInputWithIcon, { backgroundColor: theme.inputBackground, color: theme.inputText }]}
-                placeholder={t.school}
-                placeholderTextColor={theme.placeholderText}
-                value={school}
-                onChangeText={setSchool}
-              />
-            </View>
+            </TouchableOpacity>
           </View>
 
+          {/* Email */}
           <View style={styles.formGroup}>
             <Text style={[styles.formLabel, { color: theme.text }]}>{t.studentMail}</Text>
             <View style={styles.inputWrapper}>
@@ -78,6 +120,7 @@ const LoginScreen = ({ onLogin }) => {
             </View>
           </View>
 
+          {/* Password */}
           <View style={styles.formGroup}>
             <Text style={[styles.formLabel, { color: theme.text }]}>{t.educationPassword}</Text>
             <View style={styles.inputWrapper}>
@@ -94,20 +137,87 @@ const LoginScreen = ({ onLogin }) => {
 
           <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
-          <TouchableOpacity style={[styles.loginButton, { backgroundColor: theme.inputBackground }]} onPress={handleSubmit}>
-            <Text style={[styles.loginButtonText, { color: theme.text }]}>{t.login}</Text>
-            <Svg width="21" height="21" viewBox="0 0 21 21" fill="none">
-              <Path
-                d="M12.25 4.375L18.375 10.5M18.375 10.5L12.25 16.625M18.375 10.5H2.625"
-                stroke={theme.text}
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
+          {/* Login Button */}
+          <TouchableOpacity
+            style={[styles.loginButton, { backgroundColor: theme.inputBackground }]}
+            onPress={handleSubmit}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color={theme.text} />
+            ) : (
+              <>
+                <Text style={[styles.loginButtonText, { color: theme.text }]}>{t.login}</Text>
+                <Svg width="21" height="21" viewBox="0 0 21 21" fill="none">
+                  <Path
+                    d="M12.25 4.375L18.375 10.5M18.375 10.5L12.25 16.625M18.375 10.5H2.625"
+                    stroke={theme.text}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Dropdown Modal */}
+      <Modal
+        visible={dropdownVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDropdownVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setDropdownVisible(false)}
+        >
+          <View style={[styles.dropdownModal, { backgroundColor: theme.card }]}>
+            <Text style={[styles.dropdownTitle, { color: theme.text }]}>{t.school}</Text>
+            <View style={[styles.dropdownDivider, { backgroundColor: theme.divider }]} />
+
+            {courses.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyStateText, { color: theme.placeholderText }]}>
+                  Geen courses gevonden
+                </Text>
+              </View>
+            ) : (
+              <ScrollView style={styles.dropdownList} showsVerticalScrollIndicator={false}>
+                {courses.map((course, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.dropdownItem,
+                      { backgroundColor: selectedCourse === course ? theme.inputBackground : 'transparent' },
+                    ]}
+                    onPress={() => {
+                      setSelectedCourse(course);
+                      setDropdownVisible(false);
+                    }}
+                  >
+                    <Text style={[styles.dropdownItemText, { color: theme.text }]}>{course}</Text>
+                    {selectedCourse === course && (
+                      <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <Path
+                          d="M20 6L9 17L4 12"
+                          stroke={theme.text}
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </Svg>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -163,11 +273,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  inputIcon: {
-    position: 'absolute',
-    left: Math.round(width * 0.04),
-    zIndex: 1,
-  },
   formInput: {
     width: '100%',
     height: Math.round(height * 0.055),
@@ -176,14 +281,19 @@ const styles = StyleSheet.create({
     fontSize: Math.round(width * 0.032),
     fontWeight: '600',
   },
-  formInputWithIcon: {
+  dropdownButton: {
     width: '100%',
     height: Math.round(height * 0.055),
-    paddingLeft: Math.round(width * 0.1),
-    paddingRight: Math.round(width * 0.04),
+    paddingHorizontal: Math.round(width * 0.04),
     borderRadius: 31,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dropdownButtonText: {
     fontSize: Math.round(width * 0.032),
     fontWeight: '600',
+    flex: 1,
   },
   loginButton: {
     width: '100%',
@@ -198,6 +308,55 @@ const styles = StyleSheet.create({
   loginButtonText: {
     fontSize: Math.round(width * 0.04),
     fontWeight: '600',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  dropdownModal: {
+    width: '100%',
+    maxWidth: 340,
+    maxHeight: height * 0.5,
+    borderRadius: 20,
+    padding: 20,
+  },
+  dropdownTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  dropdownDivider: {
+    height: 1,
+    marginBottom: 10,
+    opacity: 0.5,
+  },
+  dropdownList: {
+    maxHeight: height * 0.35,
+  },
+  dropdownItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  emptyState: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 14,
   },
 });
 

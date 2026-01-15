@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,17 @@ import {
   Animated,
   Dimensions,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import Svg, { Path, Circle, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useTheme } from '../../ThemeContext';
 import { useLanguage } from '../../LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  getAttendanceByBadgeNumber,
+  getNotesForStudent,
+  transformAttendanceData,
+} from '../services/database';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -20,6 +27,14 @@ const { height, width } = Dimensions.get('window');
 const AttendanceScreen = ({ onNavigateToSettings }) => {
   const { isDarkMode, theme } = useTheme();
   const { t } = useLanguage();
+  const { user } = useAuth();
+
+  // State voor data uit database
+  const [student, setStudent] = useState(null);
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [notes, setNotes] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Helper function to translate date like "Dec 15" to localized format
   const translateDate = (dateStr) => {
@@ -35,6 +50,49 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
   const [statusFilter, setStatusFilter] = React.useState(null);
   const fadeAnim = React.useRef(new Animated.Value(1)).current;
   const slideAnim = React.useRef(new Animated.Value(0)).current;
+
+  // Haal data op uit Supabase
+  useEffect(() => {
+    const fetchData = async () => {
+      // User is nu direct de student data uit de students tabel
+      if (!user) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // User bevat al de student data
+        setStudent(user);
+
+        // Haal aanwezigheidsdata op
+        if (user?.badge_number) {
+          const { data: attendance, error: attendanceError } = await getAttendanceByBadgeNumber(
+            user.badge_number
+          );
+
+          if (!attendanceError && attendance) {
+            const transformed = transformAttendanceData(attendance);
+            setAttendanceData(transformed);
+          }
+        }
+
+        // Haal notities op
+        if (user?.id) {
+          const { data: notesData } = await getNotesForStudent(user.id);
+          if (notesData) {
+            setNotes(notesData);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user]);
 
   // Animated values for chart
   const animatedPresentDash = React.useRef(new Animated.Value(0)).current;
@@ -99,7 +157,7 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
       setNoteExpanded(false);
 
       // Reset row animations
-      attendanceData.forEach((_, index) => {
+      displayData.forEach((_, index) => {
         const rowAnim = getRowAnimation(index);
         rowAnim.opacity.setValue(0);
         rowAnim.translateY.setValue(-30);
@@ -154,7 +212,7 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
       ]).start();
 
       // Restart row animations immediately
-      const animations = attendanceData.map((_, index) => {
+      const animations = displayData.map((_, index) => {
         const rowAnim = getRowAnimation(index);
         return Animated.parallel([
           Animated.timing(rowAnim.opacity, {
@@ -175,7 +233,8 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
     });
   };
 
-  const attendanceData = [
+  // Demo data als fallback wanneer geen database data beschikbaar is
+  const demoData = [
     { day: 'Mon', date: 'Dec 15', status: 'Present', color: '#E3A6FF', time: '08:30', reasonKey: '', noteKey: '' },
     { day: 'Fri', date: 'Dec 12', status: 'Present', color: '#E3A6FF', time: '08:25', reasonKey: '', noteKey: '' },
     { day: 'Thu', date: 'Dec 11', status: 'Late', color: '#5182FF', time: '09:42', reasonKey: 'doctorAppointment', noteKey: 'doctorNote' },
@@ -196,16 +255,19 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
     { day: 'Thu', date: 'Nov 20', status: 'Present', color: '#E3A6FF', time: '08:30', reasonKey: '', noteKey: '' },
   ];
 
+  // Gebruik database data of fallback naar demo data
+  const displayData = attendanceData.length > 0 ? attendanceData : demoData;
+
   // Filter data based on status filter
   const filteredData = statusFilter
-    ? attendanceData.filter(item => item.status === statusFilter)
-    : attendanceData;
+    ? displayData.filter(item => item.status === statusFilter)
+    : displayData;
 
   // Calculate attendance statistics
-  const totalDays = attendanceData.length;
-  const presentCount = attendanceData.filter(item => item.status === 'Present').length;
-  const lateCount = attendanceData.filter(item => item.status === 'Late').length;
-  const absentCount = attendanceData.filter(item => item.status === 'Absent').length;
+  const totalDays = displayData.length;
+  const presentCount = displayData.filter(item => item.status === 'Present').length;
+  const lateCount = displayData.filter(item => item.status === 'Late').length;
+  const absentCount = displayData.filter(item => item.status === 'Absent').length;
 
   const presentPercentage = Math.round((presentCount / totalDays) * 100);
 
@@ -264,7 +326,7 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
 
   // Animate table rows on mount
   React.useEffect(() => {
-    const animations = attendanceData.map((_, index) => {
+    const animations = displayData.map((_, index) => {
       const rowAnim = getRowAnimation(index);
       return Animated.parallel([
         Animated.timing(rowAnim.opacity, {
@@ -284,6 +346,16 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
 
     Animated.stagger(0, animations).start();
   }, []);
+
+  // Toon loading indicator
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
 
   if (selectedDay) {
     return (
