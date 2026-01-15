@@ -19,7 +19,16 @@ const { height, width } = Dimensions.get('window');
 
 const AttendanceScreen = ({ onNavigateToSettings }) => {
   const { isDarkMode, theme } = useTheme();
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
+
+  // Helper function to translate date like "Dec 15" to localized format
+  const translateDate = (dateStr) => {
+    const parts = dateStr.split(' ');
+    if (parts.length === 2 && t.monthNames && t.monthNames[parts[0]]) {
+      return `${t.monthNames[parts[0]]} ${parts[1]}`;
+    }
+    return dateStr;
+  };
   const [selectedDay, setSelectedDay] = React.useState(null);
   const [noteExpanded, setNoteExpanded] = React.useState(false);
   const [displayPercentage, setDisplayPercentage] = React.useState(0);
@@ -167,24 +176,24 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
   };
 
   const attendanceData = [
-    { day: 'Mon', date: 'Dec 15', status: 'Present', color: '#E3A6FF', time: '08:30', reason: '', note: '' },
-    { day: 'Fri', date: 'Dec 12', status: 'Present', color: '#E3A6FF', time: '08:25', reason: '', note: '' },
-    { day: 'Thu', date: 'Dec 11', status: 'Late', color: '#5182FF', time: '09:42', reason: 'Doctor appointment', note: 'Student had a doctor appointment, which caused them to arrive a bit later than usual. This is not a problem.\n\n-Ronald' },
-    { day: 'Wed', date: 'Dec 10', status: 'Present', color: '#E3A6FF', time: '08:28', reason: '', note: '' },
-    { day: 'Tue', date: 'Dec 9', status: 'Absent', color: '#DE0000', time: '-', reason: 'Sick', note: 'Student was sick at home.' },
-    { day: 'Mon', date: 'Dec 8', status: 'Absent', color: '#DE0000', time: '-', reason: 'Sick', note: 'Student was sick at home.' },
-    { day: 'Fri', date: 'Dec 5', status: 'Present', color: '#E3A6FF', time: '08:32', reason: '', note: '' },
-    { day: 'Thu', date: 'Dec 4', status: 'Late', color: '#5182FF', time: '09:15', reason: 'Traffic', note: 'Traffic jam on the highway.' },
-    { day: 'Wed', date: 'Dec 3', status: 'Present', color: '#E3A6FF', time: '08:27', reason: '', note: '' },
-    { day: 'Tue', date: 'Dec 2', status: 'Present', color: '#E3A6FF', time: '08:29', reason: '', note: '' },
-    { day: 'Mon', date: 'Dec 1', status: 'Present', color: '#E3A6FF', time: '08:26', reason: '', note: '' },
-    { day: 'Fri', date: 'Nov 28', status: 'Late', color: '#5182FF', time: '09:05', reason: 'Missed bus', note: 'Missed the bus because alarm went off late.' },
-    { day: 'Thu', date: 'Nov 27', status: 'Late', color: '#5182FF', time: '08:50', reason: 'Traffic', note: 'Delay due to road construction.' },
-    { day: 'Wed', date: 'Nov 26', status: 'Present', color: '#E3A6FF', time: '08:31', reason: '', note: '' },
-    { day: 'Tue', date: 'Nov 25', status: 'Present', color: '#E3A6FF', time: '08:24', reason: '', note: '' },
-    { day: 'Mon', date: 'Nov 24', status: 'Present', color: '#E3A6FF', time: '08:30', reason: '', note: '' },
-    { day: 'Fri', date: 'Nov 21', status: 'Present', color: '#E3A6FF', time: '08:25', reason: '', note: '' },
-    { day: 'Thu', date: 'Nov 20', status: 'Present', color: '#E3A6FF', time: '08:30', reason: '', note: '' },
+    { day: 'Mon', date: 'Dec 15', status: 'Present', color: '#E3A6FF', time: '08:30', reasonKey: '', noteKey: '' },
+    { day: 'Fri', date: 'Dec 12', status: 'Present', color: '#E3A6FF', time: '08:25', reasonKey: '', noteKey: '' },
+    { day: 'Thu', date: 'Dec 11', status: 'Late', color: '#5182FF', time: '09:42', reasonKey: 'doctorAppointment', noteKey: 'doctorNote' },
+    { day: 'Wed', date: 'Dec 10', status: 'Present', color: '#E3A6FF', time: '08:28', reasonKey: '', noteKey: '' },
+    { day: 'Tue', date: 'Dec 9', status: 'Absent', color: '#DE0000', time: '-', reasonKey: 'sick', noteKey: 'sickNote' },
+    { day: 'Mon', date: 'Dec 8', status: 'Absent', color: '#DE0000', time: '-', reasonKey: 'sick', noteKey: 'sickNote' },
+    { day: 'Fri', date: 'Dec 5', status: 'Present', color: '#E3A6FF', time: '08:32', reasonKey: '', noteKey: '' },
+    { day: 'Thu', date: 'Dec 4', status: 'Late', color: '#5182FF', time: '09:15', reasonKey: 'traffic', noteKey: 'trafficNote' },
+    { day: 'Wed', date: 'Dec 3', status: 'Present', color: '#E3A6FF', time: '08:27', reasonKey: '', noteKey: '' },
+    { day: 'Tue', date: 'Dec 2', status: 'Present', color: '#E3A6FF', time: '08:29', reasonKey: '', noteKey: '' },
+    { day: 'Mon', date: 'Dec 1', status: 'Present', color: '#E3A6FF', time: '08:26', reasonKey: '', noteKey: '' },
+    { day: 'Fri', date: 'Nov 28', status: 'Late', color: '#5182FF', time: '09:05', reasonKey: 'missedBus', noteKey: 'missedBusNote' },
+    { day: 'Thu', date: 'Nov 27', status: 'Late', color: '#5182FF', time: '08:50', reasonKey: 'traffic', noteKey: 'roadConstructionNote' },
+    { day: 'Wed', date: 'Nov 26', status: 'Present', color: '#E3A6FF', time: '08:31', reasonKey: '', noteKey: '' },
+    { day: 'Tue', date: 'Nov 25', status: 'Present', color: '#E3A6FF', time: '08:24', reasonKey: '', noteKey: '' },
+    { day: 'Mon', date: 'Nov 24', status: 'Present', color: '#E3A6FF', time: '08:30', reasonKey: '', noteKey: '' },
+    { day: 'Fri', date: 'Nov 21', status: 'Present', color: '#E3A6FF', time: '08:25', reasonKey: '', noteKey: '' },
+    { day: 'Thu', date: 'Nov 20', status: 'Present', color: '#E3A6FF', time: '08:30', reasonKey: '', noteKey: '' },
   ];
 
   // Filter data based on status filter
@@ -282,7 +291,7 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
 
         <View style={[styles.header, { backgroundColor: theme.header }]}>
-          <Text style={[styles.appTitle, { color: theme.text }]}>Edu Check</Text>
+          <Text style={[styles.appTitle, { color: theme.text }]}>{t.appName}</Text>
         </View>
 
         <Animated.View style={[styles.detailContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
@@ -295,43 +304,52 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
               <Text style={[styles.backButtonText, { color: theme.text }]}>←</Text>
             </TouchableOpacity>
             <Text style={[styles.detailTitle, { color: theme.text }]}>
-              {selectedDay.day} {selectedDay.date.toLowerCase()}
+              {(t.dayNames && t.dayNames[selectedDay.day]) || selectedDay.day} {translateDate(selectedDay.date).toLowerCase()}
             </Text>
           </View>
 
           <View style={styles.detailInfoContainer}>
             <View style={[styles.statusBadge, { backgroundColor: theme.card }]}>
               <View style={[styles.statusDot, { backgroundColor: selectedDay.color }]} />
-              <Text style={[styles.statusText, { color: theme.text }]}>{selectedDay.status}</Text>
+              <Text style={[styles.statusText, { color: theme.text }]}>{t[selectedDay.status.toLowerCase()] || selectedDay.status}</Text>
               <Text style={[styles.statusTime, { color: theme.text }]}>{selectedDay.time}</Text>
             </View>
 
             <View style={[styles.reasonSection, { backgroundColor: theme.card }]}>
               <Text style={[styles.reasonText, { color: theme.text }]}>
-                {selectedDay.reason ? `${t.reason}: ${selectedDay.reason}` : `${t.reason}: -`}
+                {selectedDay.reasonKey ? `${t.reason}: ${t[selectedDay.reasonKey] || selectedDay.reasonKey}` : `${t.reason}: -`}
               </Text>
             </View>
 
             <TouchableOpacity
               style={[styles.noteSection, { backgroundColor: theme.card }, noteExpanded && styles.noteSectionExpanded]}
               onPress={() => {
-                if (selectedDay.note && selectedDay.note.split(' ').length > 10) {
+                const noteText = selectedDay.noteKey ? (t[selectedDay.noteKey] || '') : '';
+                if (noteText && noteText.split(' ').length > 10) {
                   setNoteExpanded(!noteExpanded);
                 }
               }}
-              activeOpacity={selectedDay.note && selectedDay.note.split(' ').length > 10 ? 0.7 : 1}
-              disabled={!selectedDay.note || selectedDay.note.split(' ').length <= 10}
+              activeOpacity={(() => {
+                const noteText = selectedDay.noteKey ? (t[selectedDay.noteKey] || '') : '';
+                return noteText && noteText.split(' ').length > 10 ? 0.7 : 1;
+              })()}
+              disabled={(() => {
+                const noteText = selectedDay.noteKey ? (t[selectedDay.noteKey] || '') : '';
+                return !noteText || noteText.split(' ').length <= 10;
+              })()}
             >
               <Text style={[styles.noteLabel, { color: theme.text }]}>{t.note}:</Text>
               <View style={[styles.noteBox, { backgroundColor: theme.inputBackground }]}>
                 <Text style={[styles.noteText, { color: theme.text }]}>
-                  {selectedDay.note
-                    ? (noteExpanded
-                      ? selectedDay.note
-                      : selectedDay.note.split(' ').length > 10
-                      ? selectedDay.note.split(' ').slice(0, 10).join(' ') + ' ' + t.more
-                      : selectedDay.note)
-                    : '-'}
+                  {(() => {
+                    const noteText = selectedDay.noteKey ? (t[selectedDay.noteKey] || '') : '';
+                    if (!noteText) return '-';
+                    if (noteExpanded) return noteText;
+                    if (noteText.split(' ').length > 10) {
+                      return noteText.split(' ').slice(0, 10).join(' ') + ' ' + t.more;
+                    }
+                    return noteText;
+                  })()}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -380,17 +398,7 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
                         <Text style={[styles.cellText, { color: theme.text }]}>{(t.dayNames && t.dayNames[item.day]) || item.day}</Text>
                       </View>
                       <View style={styles.cellWrapper}>
-                        <Text style={[styles.cellText, { color: theme.text }]}>{(() => {
-                          // try to parse date like 'Dec 15' or 'Dec 15' with year - fallback to original
-                          try {
-                            // If item.date contains a month name and day, append a year fallback
-                            const parsed = new Date(item.date);
-                            if (!isNaN(parsed)) {
-                              return new Intl.DateTimeFormat(language, { month: 'short', day: 'numeric' }).format(parsed);
-                            }
-                          } catch (e) {}
-                          return item.date;
-                        })()}</Text>
+                        <Text style={[styles.cellText, { color: theme.text }]}>{translateDate(item.date)}</Text>
                       </View>
                       <View style={styles.cellWrapper}>
                         <Text style={[styles.cellText, { color: theme.text }]}>{t[item.status.toLowerCase()] || item.status}</Text>
@@ -425,7 +433,7 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
 
       <View style={[styles.header, { backgroundColor: theme.header }]}>
-        <Text style={[styles.appTitle, { color: theme.text }]}>Edu Check</Text>
+        <Text style={[styles.appTitle, { color: theme.text }]}>{t.appName}</Text>
       </View>
 
       <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
@@ -594,17 +602,7 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
                       <Text style={[styles.cellText, { color: theme.text }]}>{(t.dayNames && t.dayNames[item.day]) || item.day}</Text>
                     </View>
                     <View style={styles.cellWrapper}>
-                      <Text style={[styles.cellText, { color: theme.text }]}>{(() => {
-                        // try to parse date like 'Dec 15' or 'Dec 15' with year - fallback to original
-                        try {
-                          // If item.date contains a month name and day, append a year fallback
-                          const parsed = new Date(item.date);
-                          if (!isNaN(parsed)) {
-                            return new Intl.DateTimeFormat(language, { month: 'short', day: 'numeric' }).format(parsed);
-                          }
-                        } catch (e) {}
-                        return item.date;
-                      })()}</Text>
+                      <Text style={[styles.cellText, { color: theme.text }]}>{translateDate(item.date)}</Text>
                     </View>
                     <View style={styles.cellWrapper}>
                       <Text style={[styles.cellText, { color: theme.text }]}>{t[item.status.toLowerCase()] || item.status}</Text>

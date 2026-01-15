@@ -9,20 +9,263 @@ import {
   Platform,
   Dimensions,
   TouchableOpacity,
+  Animated,
 } from 'react-native';
+import { Video, Audio } from 'expo-av';
 import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../ThemeContext';
 import { useLanguage, languageNames } from '../../LanguageContext';
 
 const { height, width } = Dimensions.get('window');
 
 const SettingsScreen = ({ onNavigateBack, onLogout }) => {
-  const { isDarkMode, toggleDarkMode, theme } = useTheme();
+  const { isDarkMode, toggleDarkMode, theme, isPartyMode, startPartyMode } = useTheme();
   const { language, changeLanguage, t } = useLanguage();
   const [langModalVisible, setLangModalVisible] = React.useState(false);
+  const [profilePictureModalVisible, setProfilePictureModalVisible] = React.useState(false);
+  const [languageEasterEggActive, setLanguageEasterEggActive] = React.useState(false);
+  const [chineseCharacters, setChineseCharacters] = React.useState([]);
+  const longPressTimerRef = React.useRef(null);
+  const profilePictureLongPressTimer = React.useRef(null);
+  const videoRef = React.useRef(null);
+  const soundRef = React.useRef(null);
+  const shakeAnimation = React.useRef(new Animated.Value(0)).current;
+  const hapticIntervalRef = React.useRef(null);
+  const easterEggTimerRef = React.useRef(null);
+  const characterIntervalRef = React.useRef(null);
+
+  // Chinese tekens voor de easter egg
+  const chineseChars = ['你', '好', '世', '界', '龙', '福', '爱', '乐', '春', '喜', '财', '寿', '禅', '道', '气', '风', '水', '火', '山', '海'];
+
+  const handleDarkModePressIn = () => {
+    // Start timer for long press (2 seconds)
+    longPressTimerRef.current = setTimeout(() => {
+      startPartyMode();
+    }, 2000);
+  };
+
+  const handleDarkModePressOut = () => {
+    // Cancel timer if released before 2 seconds
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleProfilePicturePressIn = () => {
+    profilePictureLongPressTimer.current = setTimeout(() => {
+      setProfilePictureModalVisible(true);
+    }, 800);
+  };
+
+  const handleProfilePicturePressOut = () => {
+    if (profilePictureLongPressTimer.current) {
+      clearTimeout(profilePictureLongPressTimer.current);
+      profilePictureLongPressTimer.current = null;
+    }
+  };
+
+  const createDancingCharacter = () => {
+    const char = chineseChars[Math.floor(Math.random() * chineseChars.length)];
+    const charSize = Math.round(width * 0.12); // Adaptieve character grootte
+    const wobbleDistance = Math.round(width * 0.08); // Adaptieve wiebel afstand
+    const startX = Math.random() * (width - charSize);
+    const startY = -charSize;
+    const animY = new Animated.Value(startY);
+    const animX = new Animated.Value(startX);
+    const animRotate = new Animated.Value(0);
+    const animScale = new Animated.Value(0.5);
+    const id = Date.now() + Math.random();
+
+    const newChar = {
+      id,
+      char,
+      animY,
+      animX,
+      animRotate,
+      animScale,
+    };
+
+    setChineseCharacters(prev => [...prev, newChar]);
+
+    // Animatie naar beneden met wiebelen
+    Animated.parallel([
+      Animated.timing(animY, {
+        toValue: height + charSize,
+        duration: 3000 + Math.random() * 2000,
+        useNativeDriver: true,
+      }),
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(animX, {
+            toValue: startX + wobbleDistance,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(animX, {
+            toValue: startX - wobbleDistance,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ])
+      ),
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(animRotate, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(animRotate, {
+            toValue: -1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ])
+      ),
+      Animated.sequence([
+        Animated.timing(animScale, {
+          toValue: 1.5,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animScale, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start(() => {
+      // Verwijder karakter na animatie
+      setChineseCharacters(prev => prev.filter(c => c.id !== id));
+    });
+  };
+
+  const startLanguageEasterEgg = async () => {
+    setLanguageEasterEggActive(true);
+
+    // Start muziek (language easter egg) - loopt tot easter egg stopt
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        require('../../assets/lang.mp3'),
+        { shouldPlay: true, isLooping: true }
+      );
+      soundRef.current = sound;
+    } catch (error) {
+      console.log('Error loading sound:', error);
+    }
+
+    // Start scherm trillen animatie (adaptief op basis van schermbreedte)
+    const shakeIntensity = Math.round(width * 0.025);
+    const shakeSequence = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shakeAnimation, {
+          toValue: shakeIntensity,
+          duration: 50,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shakeAnimation, {
+          toValue: -shakeIntensity,
+          duration: 50,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shakeAnimation, {
+          toValue: shakeIntensity,
+          duration: 50,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shakeAnimation, {
+          toValue: 0,
+          duration: 50,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    shakeSequence.start();
+
+    // Start haptic feedback interval (elke 200ms een zware haptic)
+    hapticIntervalRef.current = setInterval(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    }, 200);
+
+    // Start Chinese tekens spawnen (elke 150ms een nieuw teken)
+    characterIntervalRef.current = setInterval(() => {
+      createDancingCharacter();
+    }, 150);
+
+    // Stop alles na 10 seconden
+    easterEggTimerRef.current = setTimeout(() => {
+      stopLanguageEasterEgg();
+    }, 10000);
+  };
+
+  const stopLanguageEasterEgg = async () => {
+    setLanguageEasterEggActive(false);
+
+    // Stop muziek
+    if (soundRef.current) {
+      await soundRef.current.stopAsync();
+      await soundRef.current.unloadAsync();
+      soundRef.current = null;
+    }
+
+    // Stop shake animatie
+    shakeAnimation.stopAnimation();
+    shakeAnimation.setValue(0);
+
+    // Stop haptic interval
+    if (hapticIntervalRef.current) {
+      clearInterval(hapticIntervalRef.current);
+      hapticIntervalRef.current = null;
+    }
+
+    // Stop character spawning interval
+    if (characterIntervalRef.current) {
+      clearInterval(characterIntervalRef.current);
+      characterIntervalRef.current = null;
+    }
+
+    // Stop easter egg timer
+    if (easterEggTimerRef.current) {
+      clearTimeout(easterEggTimerRef.current);
+      easterEggTimerRef.current = null;
+    }
+
+    // Clear Chinese tekens
+    setChineseCharacters([]);
+  };
+
+  const handleLanguagePress = () => {
+    // Normale klik -> open language modal
+    if (!languageEasterEggActive) {
+      setLangModalVisible(true);
+    }
+  };
+
+  const handleLanguageLongPress = () => {
+    // 10 seconden ingedrukt -> start easter egg
+    startLanguageEasterEgg();
+  };
+
+  const handleCloseModal = async () => {
+    // Stop en reset de video
+    if (videoRef.current) {
+      await videoRef.current.stopAsync();
+      await videoRef.current.setPositionAsync(0);
+    }
+    setProfilePictureModalVisible(false);
+  };
+
+  const handleVideoPlaybackStatusUpdate = (status) => {
+    // Als de video is afgelopen, sluit de modal automatisch
+    if (status.didJustFinish) {
+      handleCloseModal();
+    }
+  };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <Animated.View style={[styles.container, { backgroundColor: theme.background, transform: [{ translateX: shakeAnimation }] }]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
 
       <View style={[styles.header, { backgroundColor: theme.header }]}> 
@@ -44,12 +287,18 @@ const SettingsScreen = ({ onNavigateBack, onLogout }) => {
 
         <View style={[styles.profileCard, { backgroundColor: theme.card }]}>
           <View style={[styles.profileInfo]}>
-            <Image
-              source={{
-                uri: 'https://api.builder.io/api/v1/image/assets/TEMP/a68693fb8aeee5e85741d318f7f389e2479ca8b4?width=130',
-              }}
-              style={styles.profileAvatar}
-            />
+            <TouchableOpacity
+              onPressIn={handleProfilePicturePressIn}
+              onPressOut={handleProfilePicturePressOut}
+              activeOpacity={0.8}
+            >
+              <Image
+                source={{
+                  uri: 'https://api.builder.io/api/v1/image/assets/TEMP/a68693fb8aeee5e85741d318f7f389e2479ca8b4?width=130',
+                }}
+                style={styles.profileAvatar}
+              />
+            </TouchableOpacity>
 
             <View>
               <Text style={[styles.profileName, { color: theme.text }]}>Cornelis de Witt</Text>
@@ -72,11 +321,13 @@ const SettingsScreen = ({ onNavigateBack, onLogout }) => {
         <View style={[styles.settingsCard, { backgroundColor: theme.card }]}>
           <TouchableOpacity
             onPress={toggleDarkMode}
+            onPressIn={handleDarkModePressIn}
+            onPressOut={handleDarkModePressOut}
             style={styles.rowButton}
             activeOpacity={0.6}
           >
-            <Feather name={isDarkMode ? 'sun' : 'moon'} size={Math.round(width * 0.06)} color={theme.text} />
-            <Text style={[styles.rowText, { color: theme.text }]}>{t.darkMode}</Text>
+            <Feather name={isPartyMode ? 'zap' : (isDarkMode ? 'sun' : 'moon')} size={Math.round(width * 0.06)} color={theme.text} />
+            <Text style={[styles.rowText, { color: theme.text }]}>{isPartyMode ? 'PARTY MODE!' : t.darkMode}</Text>
           </TouchableOpacity>
 
           <View style={[styles.divider, { backgroundColor: theme.divider }]} />
@@ -84,7 +335,9 @@ const SettingsScreen = ({ onNavigateBack, onLogout }) => {
           <TouchableOpacity
             style={styles.rowButton}
             activeOpacity={0.6}
-            onPress={() => setLangModalVisible(true)}
+            onPress={handleLanguagePress}
+            onLongPress={handleLanguageLongPress}
+            delayLongPress={3000}
           >
             <Feather name="globe" size={Math.round(width * 0.06)} color={theme.text} />
             <Text style={[styles.rowText, { color: theme.text }]}>{t.language}</Text>
@@ -94,8 +347,8 @@ const SettingsScreen = ({ onNavigateBack, onLogout }) => {
 
       {/* Language modal overlay */}
       {langModalVisible && (
-        <View style={styles.modalOverlay} pointerEvents="box-none">
-          <View style={[styles.modalContainer, { backgroundColor: theme.card }]}>
+        <View style={[styles.modalOverlay, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.4)' }]} pointerEvents="box-none">
+          <View style={[styles.modalContainer, { backgroundColor: isDarkMode ? '#3a3a3a' : theme.card }]}>
             <Text style={[styles.modalTitle, { color: theme.text }]}>{t.selectLanguage}</Text>
             {Object.keys(languageNames).map((key) => (
               <TouchableOpacity
@@ -118,7 +371,46 @@ const SettingsScreen = ({ onNavigateBack, onLogout }) => {
           </View>
         </View>
       )}
-    </View>
+
+      {/* Profile Picture modal overlay - Easter Egg Video! */}
+      {profilePictureModalVisible && (
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,1)' }]}>
+          <Video
+            ref={videoRef}
+            source={require('../../assets/easter-egg-video.mp4')}
+            style={styles.videoFullScreen}
+            resizeMode="contain"
+            shouldPlay={true}
+            isLooping={false}
+            useNativeControls={false}
+            onPlaybackStatusUpdate={handleVideoPlaybackStatusUpdate}
+          />
+        </View>
+      )}
+
+      {/* Chinese tekens easter egg overlay */}
+      {languageEasterEggActive && chineseCharacters.map((charObj) => (
+        <Animated.Text
+          key={charObj.id}
+          style={[
+            styles.dancingChinese,
+            {
+              transform: [
+                { translateX: charObj.animX },
+                { translateY: charObj.animY },
+                { rotate: charObj.animRotate.interpolate({
+                  inputRange: [-1, 1],
+                  outputRange: ['-30deg', '30deg'],
+                }) },
+                { scale: charObj.animScale },
+              ],
+            },
+          ]}
+        >
+          {charObj.char}
+        </Animated.Text>
+      ))}
+    </Animated.View>
   );
 };
 
@@ -216,7 +508,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.25)',
   },
   modalContainer: {
     width: Math.min(420, width - 60),
@@ -249,6 +540,32 @@ const styles = StyleSheet.create({
   modalCloseText: {
     fontSize: 15,
     fontWeight: '700',
+  },
+  profilePictureModalContainer: {
+    position: 'relative',
+    width: Math.min(width * 0.9, 600),
+    height: Math.min(width * 0.9, 600),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profilePictureModal: {
+    width: '100%',
+    height: '100%',
+    borderRadius: Math.round(width * 0.05),
+  },
+  videoFullScreen: {
+    width: width,
+    height: height,
+  },
+  dancingChinese: {
+    position: 'absolute',
+    fontSize: Math.round(width * 0.12),
+    color: '#FF0000',
+    fontWeight: 'bold',
+    textShadowColor: '#FFD700',
+    textShadowOffset: { width: Math.round(width * 0.005), height: Math.round(width * 0.005) },
+    textShadowRadius: Math.round(width * 0.012),
+    zIndex: 9999,
   },
 });
 
