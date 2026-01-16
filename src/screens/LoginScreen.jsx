@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,62 +6,116 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
+  Platform,
+  Dimensions,
+  Alert,
+  ActivityIndicator,
+  Modal,
+  ScrollView,
 } from 'react-native';
-import Svg, { Path, Rect, G, Defs, Filter, FeFlood, FeBlend, FeGaussianBlur } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
+import { useTheme } from '../../ThemeContext';
+import { useLanguage } from '../../LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
+import { getAllCourses } from '../services/database';
 
-const LoginScreen = ({ onLogin }) => {
-  const [school, setSchool] = useState('');
+const { height, width } = Dimensions.get('window');
+
+const LoginScreen = () => {
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [courses, setCourses] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [dropdownVisible, setDropdownVisible] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { isDarkMode, theme } = useTheme();
+  const { t } = useLanguage();
+  const { signIn } = useAuth();
 
-  const handleSubmit = () => {
-    if (onLogin) {
-      onLogin({ school, email, password });
+  // Haal courses op bij mount
+  useEffect(() => {
+    const fetchCourses = async () => {
+      setCoursesLoading(true);
+      const { data, error } = await getAllCourses();
+      if (!error && data) {
+        setCourses(data);
+      }
+      setCoursesLoading(false);
+    };
+    fetchCourses();
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!selectedCourse) {
+      Alert.alert('Fout', 'Selecteer je school');
+      return;
+    }
+    if (!email || !password) {
+      Alert.alert('Fout', 'Vul je email en wachtwoord in');
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await signIn(email, password, selectedCourse.id);
+    setIsLoading(false);
+
+    if (error) {
+      Alert.alert('Login mislukt', error.message);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
 
-      <View style={styles.header}>
-        <Text style={styles.appTitle}>Edu Check</Text>
+      <View style={[styles.header, { backgroundColor: theme.header }]}>
+        <Text style={[styles.appTitle, { color: theme.text }]}>{t.appName}</Text>
       </View>
 
       <View style={styles.content}>
-        <View style={styles.loginCard}>
-          <Text style={styles.loginTitle}>Login</Text>
-          <View style={styles.divider} />
+        <View style={[styles.loginCard, { backgroundColor: theme.card }]}>
+          <Text style={[styles.loginTitle, { color: theme.text }]}>{t.login}</Text>
+          <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
+          {/* Course Dropdown */}
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>School</Text>
-            <View style={styles.inputWrapper}>
-              <Svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={styles.inputIcon}>
+            <Text style={[styles.formLabel, { color: theme.text }]}>{t.school}</Text>
+            <TouchableOpacity
+              style={[styles.dropdownButton, { backgroundColor: theme.inputBackground }]}
+              onPress={() => setDropdownVisible(true)}
+              disabled={coursesLoading}
+            >
+              <Text
+                style={[
+                  styles.dropdownButtonText,
+                  { color: selectedCourse ? theme.inputText : theme.placeholderText },
+                ]}
+              >
+                {coursesLoading
+                  ? 'Laden...'
+                  : selectedCourse ? `${selectedCourse.name} (${selectedCourse.city})` : t.school}
+              </Text>
+              <Svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <Path
                   d="M4 6L8 10L12 6"
-                  stroke="#5C5C5C"
+                  stroke={theme.inputText}
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
               </Svg>
-              <TextInput
-                style={styles.formInputWithIcon}
-                placeholder="School"
-                placeholderTextColor="#9CA3AF"
-                value={school}
-                onChangeText={setSchool}
-              />
-            </View>
+            </TouchableOpacity>
           </View>
 
+          {/* Email */}
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Student Mail</Text>
+            <Text style={[styles.formLabel, { color: theme.text }]}>{t.studentMail}</Text>
             <View style={styles.inputWrapper}>
               <TextInput
-                style={styles.formInput}
+                style={[styles.formInput, { backgroundColor: theme.inputBackground, color: theme.inputText }]}
                 placeholder="123456@student.fontys.nl"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={theme.placeholderText}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -70,13 +124,14 @@ const LoginScreen = ({ onLogin }) => {
             </View>
           </View>
 
+          {/* Password */}
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Education Password</Text>
+            <Text style={[styles.formLabel, { color: theme.text }]}>{t.educationPassword}</Text>
             <View style={styles.inputWrapper}>
               <TextInput
-                style={styles.formInput}
-                placeholder="password"
-                placeholderTextColor="#9CA3AF"
+                style={[styles.formInput, { backgroundColor: theme.inputBackground, color: theme.inputText }]}
+                placeholder={t.educationPassword}
+                placeholderTextColor={theme.placeholderText}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -84,22 +139,92 @@ const LoginScreen = ({ onLogin }) => {
             </View>
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
-          <TouchableOpacity style={styles.loginButton} onPress={handleSubmit}>
-            <Text style={styles.loginButtonText}>Login</Text>
-            <Svg width="21" height="21" viewBox="0 0 21 21" fill="none">
-              <Path
-                d="M12.25 4.375L18.375 10.5M18.375 10.5L12.25 16.625M18.375 10.5H2.625"
-                stroke="black"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
+          {/* Login Button */}
+          <TouchableOpacity
+            style={[styles.loginButton, { backgroundColor: theme.inputBackground }]}
+            onPress={handleSubmit}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color={theme.text} />
+            ) : (
+              <>
+                <Text style={[styles.loginButtonText, { color: theme.text }]}>{t.login}</Text>
+                <Svg width="21" height="21" viewBox="0 0 21 21" fill="none">
+                  <Path
+                    d="M12.25 4.375L18.375 10.5M18.375 10.5L12.25 16.625M18.375 10.5H2.625"
+                    stroke={theme.text}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Dropdown Modal */}
+      <Modal
+        visible={dropdownVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDropdownVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setDropdownVisible(false)}
+        >
+          <View style={[styles.dropdownModal, { backgroundColor: theme.card }]}>
+            <Text style={[styles.dropdownTitle, { color: theme.text }]}>{t.school}</Text>
+            <View style={[styles.dropdownDivider, { backgroundColor: theme.divider }]} />
+
+            {courses.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyStateText, { color: theme.placeholderText }]}>
+                  Geen courses gevonden
+                </Text>
+              </View>
+            ) : (
+              <ScrollView style={styles.dropdownList} showsVerticalScrollIndicator={false}>
+                {courses.map((course) => (
+                  <TouchableOpacity
+                    key={course.id}
+                    style={[
+                      styles.dropdownItem,
+                      { backgroundColor: selectedCourse?.id === course.id ? theme.inputBackground : 'transparent' },
+                    ]}
+                    onPress={() => {
+                      setSelectedCourse(course);
+                      setDropdownVisible(false);
+                    }}
+                  >
+                    <View>
+                      <Text style={[styles.dropdownItemText, { color: theme.text }]}>{course.name}</Text>
+                      <Text style={[styles.dropdownItemCity, { color: theme.placeholderText }]}>{course.city}</Text>
+                    </View>
+                    {selectedCourse?.id === course.id && (
+                      <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <Path
+                          d="M20 6L9 17L4 12"
+                          stroke={theme.text}
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </Svg>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -107,102 +232,142 @@ const LoginScreen = ({ onLogin }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
   },
   header: {
-    backgroundColor: '#E6B3FF',
-    paddingTop: 80,
-    paddingBottom: 20,
+    paddingTop: Platform.OS === 'ios' ? Math.round(height * 0.08) : Math.round(height * 0.04),
+    paddingBottom: Math.round(height * 0.025),
     alignItems: 'center',
     justifyContent: 'center',
   },
   appTitle: {
-    color: '#000',
     fontSize: 37,
     fontWeight: '600',
   },
   content: {
     flex: 1,
-    paddingHorizontal: 35,
-    paddingTop: 60,
+    paddingHorizontal: Math.round(width * 0.09),
+    paddingTop: Math.round(height * 0.08),
     alignItems: 'center',
   },
   loginCard: {
     width: '100%',
     maxWidth: 369,
-    padding: 31,
+    padding: Math.round(width * 0.08),
     borderRadius: 31,
-    backgroundColor: '#F4DCFF',
   },
   loginTitle: {
-    color: '#000',
     textAlign: 'center',
-    fontSize: 28,
+    fontSize: Math.round(width * 0.07),
     fontWeight: '600',
-    marginBottom: 43,
+    marginBottom: Math.round(height * 0.008),
   },
   divider: {
     width: '100%',
     height: 1,
-    backgroundColor: '#A27CB3',
-    marginBottom: 22,
+    marginBottom: Math.round(height * 0.025),
     opacity: 0.5,
   },
   formGroup: {
-    marginBottom: 28,
+    marginBottom: Math.round(height * 0.032),
   },
   formLabel: {
-    color: '#000',
-    fontSize: 16,
+    fontSize: Math.round(width * 0.04),
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: Math.round(height * 0.01),
   },
   inputWrapper: {
     position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
   },
-  inputIcon: {
-    position: 'absolute',
-    left: 16,
-    zIndex: 1,
-  },
   formInput: {
     width: '100%',
-    height: 43,
-    paddingHorizontal: 16,
+    height: Math.round(height * 0.055),
+    paddingHorizontal: Math.round(width * 0.04),
     borderRadius: 31,
-    backgroundColor: '#FFF',
-    color: '#5C5C5C',
-    fontSize: 12,
+    fontSize: Math.round(width * 0.032),
     fontWeight: '600',
   },
-  formInputWithIcon: {
+  dropdownButton: {
     width: '100%',
-    height: 43,
-    paddingLeft: 40,
-    paddingRight: 16,
+    height: Math.round(height * 0.055),
+    paddingHorizontal: Math.round(width * 0.04),
     borderRadius: 31,
-    backgroundColor: '#FFF',
-    color: '#5C5C5C',
-    fontSize: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dropdownButtonText: {
+    fontSize: Math.round(width * 0.032),
     fontWeight: '600',
+    flex: 1,
   },
   loginButton: {
     width: '100%',
-    height: 43,
+    height: Math.round(height * 0.055),
     borderRadius: 31,
-    backgroundColor: '#FFF',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    marginTop: 22,
+    gap: Math.round(width * 0.03),
+    marginTop: Math.round(height * 0.025),
   },
   loginButtonText: {
-    color: '#000',
-    fontSize: 16,
+    fontSize: Math.round(width * 0.04),
     fontWeight: '600',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  dropdownModal: {
+    width: '100%',
+    maxWidth: 340,
+    maxHeight: height * 0.5,
+    borderRadius: 20,
+    padding: 20,
+  },
+  dropdownTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  dropdownDivider: {
+    height: 1,
+    marginBottom: 10,
+    opacity: 0.5,
+  },
+  dropdownList: {
+    maxHeight: height * 0.35,
+  },
+  dropdownItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  dropdownItemCity: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  emptyState: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 14,
   },
 });
 
