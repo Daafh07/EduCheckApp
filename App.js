@@ -11,6 +11,9 @@ import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
+// iPad detection and responsive scaling
+const isTablet = screenWidth >= 768;
+
 // Confetti colors
 const confettiColors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#00FFFF', '#0000FF', '#FF00FF', '#FF1493', '#FFD700', '#00FF7F'];
 
@@ -22,7 +25,9 @@ const ConfettiPiece = ({ delay, startX }) => {
   const opacityAnim = useRef(new Animated.Value(1)).current;
 
   const color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
-  const size = 8 + Math.random() * 12;
+  const baseSize = isTablet ? 12 : 8;
+  const sizeRange = isTablet ? 16 : 12;
+  const size = baseSize + Math.random() * sizeRange;
   const isCircle = Math.random() > 0.5;
   const duration = 2500 + Math.random() * 1500;
 
@@ -184,7 +189,9 @@ const LightRay = ({ angle, color, delay }) => {
   }, []);
 
   const rayLength = screenHeight * 1.2;
-  const rayWidth = 8 + Math.random() * 15;
+  const baseRayWidth = isTablet ? 12 : 8;
+  const rayWidthRange = isTablet ? 20 : 15;
+  const rayWidth = baseRayWidth + Math.random() * rayWidthRange;
 
   return (
     <Animated.View
@@ -329,7 +336,7 @@ const DancingImage = ({ visible }) => {
   );
 };
 
-const BALL_SIZE = 150;
+const BALL_SIZE = isTablet ? 200 : 150;
 
 const DiscoBall = ({ visible }) => {
   const dropAnim = useRef(new Animated.Value(-250)).current;
@@ -656,8 +663,8 @@ const styles = {
     justifyContent: 'center',
   },
   dancingImage: {
-    width: 500,
-    height: 650,
+    width: isTablet ? 650 : 500,
+    height: isTablet ? 845 : 650,
   },
 };
 

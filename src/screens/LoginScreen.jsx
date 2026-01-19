@@ -21,6 +21,9 @@ import { getAllCourses } from '../services/database';
 
 const { height, width } = Dimensions.get('window');
 
+// iPad detection and responsive scaling
+const isTablet = width >= 768;
+
 const LoginScreen = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [courses, setCourses] = useState([]);
@@ -240,7 +243,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   appTitle: {
-    fontSize: 37,
+    fontSize: isTablet ? 44 : 37,
     fontWeight: '600',
   },
   content: {
@@ -251,13 +254,13 @@ const styles = StyleSheet.create({
   },
   loginCard: {
     width: '100%',
-    maxWidth: 369,
-    padding: Math.round(width * 0.08),
+    maxWidth: isTablet ? 480 : 369,
+    padding: Math.round(width * (isTablet ? 0.05 : 0.08)),
     borderRadius: 31,
   },
   loginTitle: {
     textAlign: 'center',
-    fontSize: Math.round(width * 0.07),
+    fontSize: isTablet ? 32 : Math.round(width * 0.07),
     fontWeight: '600',
     marginBottom: Math.round(height * 0.008),
   },
@@ -271,7 +274,7 @@ const styles = StyleSheet.create({
     marginBottom: Math.round(height * 0.032),
   },
   formLabel: {
-    fontSize: Math.round(width * 0.04),
+    fontSize: isTablet ? 18 : Math.round(width * 0.04),
     fontWeight: '600',
     marginBottom: Math.round(height * 0.01),
   },
@@ -282,15 +285,15 @@ const styles = StyleSheet.create({
   },
   formInput: {
     width: '100%',
-    height: Math.round(height * 0.055),
+    height: isTablet ? 50 : Math.round(height * 0.055),
     paddingHorizontal: Math.round(width * 0.04),
     borderRadius: 31,
-    fontSize: Math.round(width * 0.032),
+    fontSize: isTablet ? 16 : Math.round(width * 0.032),
     fontWeight: '600',
   },
   dropdownButton: {
     width: '100%',
-    height: Math.round(height * 0.055),
+    height: isTablet ? 50 : Math.round(height * 0.055),
     paddingHorizontal: Math.round(width * 0.04),
     borderRadius: 31,
     flexDirection: 'row',
@@ -298,13 +301,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   dropdownButtonText: {
-    fontSize: Math.round(width * 0.032),
+    fontSize: isTablet ? 16 : Math.round(width * 0.032),
     fontWeight: '600',
     flex: 1,
   },
   loginButton: {
     width: '100%',
-    height: Math.round(height * 0.055),
+    height: isTablet ? 50 : Math.round(height * 0.055),
     borderRadius: 31,
     flexDirection: 'row',
     alignItems: 'center',
@@ -313,7 +316,7 @@ const styles = StyleSheet.create({
     marginTop: Math.round(height * 0.025),
   },
   loginButtonText: {
-    fontSize: Math.round(width * 0.04),
+    fontSize: isTablet ? 18 : Math.round(width * 0.04),
     fontWeight: '600',
   },
   // Modal styles
@@ -326,16 +329,16 @@ const styles = StyleSheet.create({
   },
   dropdownModal: {
     width: '100%',
-    maxWidth: 340,
+    maxWidth: isTablet ? 450 : 340,
     maxHeight: height * 0.5,
     borderRadius: 20,
-    padding: 20,
+    padding: isTablet ? 28 : 20,
   },
   dropdownTitle: {
-    fontSize: 18,
+    fontSize: isTablet ? 22 : 18,
     fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: isTablet ? 14 : 10,
   },
   dropdownDivider: {
     height: 1,
