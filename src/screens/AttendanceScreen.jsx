@@ -17,6 +17,12 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const { height, width } = Dimensions.get('window');
 
+// iPad detection and responsive scaling
+const isTablet = width >= 768;
+const chartSize = isTablet ? Math.min(width * 0.45, 380) : Math.min(width * 0.65, 280);
+const columnWidth = isTablet ? Math.min(width * 0.18, 140) : width * 0.25;
+const contentPadding = isTablet ? Math.round(width * 0.15) : Math.round(width * 0.09);
+
 const AttendanceScreen = ({ onNavigateToSettings }) => {
   const { isDarkMode, theme } = useTheme();
   const { t } = useLanguage();
@@ -460,7 +466,7 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
         </View>
 
         <View style={styles.chartContainer}>
-          <Svg width={Math.min(width * 0.65, 280)} height={Math.min(width * 0.65, 280)} viewBox="0 0 300 300">
+          <Svg width={chartSize} height={chartSize} viewBox="0 0 300 300">
             <AnimatedCircle
               cx="150"
               cy="150"
@@ -517,8 +523,8 @@ const AttendanceScreen = ({ onNavigateToSettings }) => {
             style={styles.chartClickableArea}
             onPress={(e) => {
               const { locationX, locationY } = e.nativeEvent;
-              const centerX = (Math.min(width * 0.65, 280)) / 2;
-              const centerY = (Math.min(width * 0.65, 280)) / 2;
+              const centerX = chartSize / 2;
+              const centerY = chartSize / 2;
 
               // Calculate angle from center
               const dx = locationX - centerX;
@@ -643,18 +649,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   appTitle: {
-    fontSize: 37,
+    fontSize: isTablet ? 44 : 37,
     fontWeight: '600',
   },
   content: {
     flex: 1,
-    paddingHorizontal: Math.round(width * 0.09),
+    paddingHorizontal: contentPadding,
     paddingTop: Math.round(height * 0.028),
     position: 'relative',
   },
   detailContent: {
     flex: 1,
-    paddingHorizontal: Math.round(width * 0.09),
+    paddingHorizontal: contentPadding,
     paddingTop: Math.round(height * 0.028),
     position: 'relative',
   },
@@ -666,7 +672,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   pageTitle: {
-    fontSize: 28,
+    fontSize: isTablet ? 34 : 28,
     fontWeight: '600',
   },
   settingsButton: {
@@ -686,13 +692,13 @@ const styles = StyleSheet.create({
   },
   chartClickableArea: {
     position: 'absolute',
-    width: Math.min(width * 0.65, 280),
-    height: Math.min(width * 0.65, 280),
+    width: chartSize,
+    height: chartSize,
     alignItems: 'center',
     justifyContent: 'center',
   },
   detailInfoContainer: {
-    height: Math.min(width * 0.65, 280) + Math.round(height * 0.008) + Math.round(height * 0.025),
+    minHeight: isTablet ? 280 : chartSize,
     marginVertical: Math.round(height * 0.008),
     marginBottom: Math.round(height * 0.025),
   },
@@ -709,7 +715,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   headerText: {
-    fontSize: 16,
+    fontSize: isTablet ? 18 : 16,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -740,33 +746,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerDay: {
-    width: width * 0.25,
+    width: columnWidth,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerCol: {
-    width: width * 0.25,
+    width: columnWidth,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dayCell: {
-    width: width * 0.25,
+    width: columnWidth,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
   colorDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: isTablet ? 12 : 10,
+    height: isTablet ? 12 : 10,
+    borderRadius: isTablet ? 6 : 5,
   },
   cellWrapper: {
-    width: width * 0.25,
+    width: columnWidth,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cellText: {
-    fontSize: 16,
+    fontSize: isTablet ? 18 : 16,
     fontWeight: '500',
     textAlign: 'center',
   },
@@ -782,51 +788,51 @@ const styles = StyleSheet.create({
     left: -6,
   },
   backButtonText: {
-    fontSize: 28,
+    fontSize: isTablet ? 34 : 28,
     fontWeight: '600',
   },
   detailTitle: {
-    fontSize: 28,
+    fontSize: isTablet ? 34 : 28,
     fontWeight: '600',
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Math.round(height * 0.012),
-    paddingHorizontal: Math.round(width * 0.06),
+    paddingVertical: isTablet ? 14 : Math.round(height * 0.012),
+    paddingHorizontal: isTablet ? 24 : Math.round(width * 0.06),
     borderRadius: 31,
-    marginBottom: Math.round(height * 0.018),
+    marginBottom: isTablet ? 16 : Math.round(height * 0.018),
   },
   statusDot: {
-    width: Math.round(width * 0.026),
-    height: Math.round(width * 0.026),
-    borderRadius: Math.round(width * 0.013),
-    marginRight: Math.round(width * 0.02),
+    width: isTablet ? 14 : Math.round(width * 0.026),
+    height: isTablet ? 14 : Math.round(width * 0.026),
+    borderRadius: isTablet ? 7 : Math.round(width * 0.013),
+    marginRight: isTablet ? 12 : Math.round(width * 0.02),
   },
   statusText: {
-    fontSize: Math.round(width * 0.05),
+    fontSize: isTablet ? 22 : Math.round(width * 0.05),
     fontWeight: '600',
     flex: 1,
   },
   statusTime: {
-    fontSize: Math.round(width * 0.05),
+    fontSize: isTablet ? 22 : Math.round(width * 0.05),
     fontWeight: '600',
   },
   reasonSection: {
-    paddingVertical: Math.round(height * 0.015),
-    paddingHorizontal: Math.round(width * 0.06),
+    paddingVertical: isTablet ? 16 : Math.round(height * 0.015),
+    paddingHorizontal: isTablet ? 24 : Math.round(width * 0.06),
     borderRadius: 31,
-    marginBottom: Math.round(height * 0.018),
+    marginBottom: isTablet ? 16 : Math.round(height * 0.018),
   },
   reasonText: {
-    fontSize: Math.round(width * 0.04),
+    fontSize: isTablet ? 18 : Math.round(width * 0.04),
     fontWeight: '600',
   },
   noteSection: {
-    paddingVertical: Math.round(height * 0.02),
-    paddingHorizontal: Math.round(width * 0.06),
+    paddingVertical: isTablet ? 18 : Math.round(height * 0.02),
+    paddingHorizontal: isTablet ? 24 : Math.round(width * 0.06),
     borderRadius: 22,
-    marginBottom: Math.round(height * 0.018),
+    marginBottom: isTablet ? 16 : Math.round(height * 0.018),
   },
   noteSectionExpanded: {
     position: 'absolute',
@@ -837,19 +843,19 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   noteLabel: {
-    fontSize: Math.round(width * 0.04),
+    fontSize: isTablet ? 18 : Math.round(width * 0.04),
     fontWeight: '600',
-    marginBottom: Math.round(height * 0.018),
+    marginBottom: isTablet ? 16 : Math.round(height * 0.018),
   },
   noteBox: {
-    padding: Math.round(width * 0.05),
+    padding: isTablet ? 20 : Math.round(width * 0.05),
     borderRadius: 13,
-    marginBottom: Math.round(height * 0.007),
+    marginBottom: isTablet ? 8 : Math.round(height * 0.007),
   },
   noteText: {
-    fontSize: Math.round(width * 0.035),
+    fontSize: isTablet ? 16 : Math.round(width * 0.035),
     fontWeight: '400',
-    lineHeight: Math.round(width * 0.06),
+    lineHeight: isTablet ? 26 : Math.round(width * 0.06),
   },
 });
 

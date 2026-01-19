@@ -15,6 +15,9 @@ import { useLanguage } from '../../LanguageContext';
 
 const { height, width } = Dimensions.get('window');
 
+// iPad detection and responsive scaling
+const isTablet = width >= 768;
+
 const LoginScreen = ({ onLogin }) => {
   const [school, setSchool] = useState('');
   const [email, setEmail] = useState('');
@@ -123,7 +126,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   appTitle: {
-    fontSize: 37,
+    fontSize: isTablet ? 44 : 37,
     fontWeight: '600',
   },
   content: {
@@ -134,13 +137,13 @@ const styles = StyleSheet.create({
   },
   loginCard: {
     width: '100%',
-    maxWidth: 369,
-    padding: Math.round(width * 0.08),
+    maxWidth: isTablet ? 480 : 369,
+    padding: Math.round(width * (isTablet ? 0.05 : 0.08)),
     borderRadius: 31,
   },
   loginTitle: {
     textAlign: 'center',
-    fontSize: Math.round(width * 0.07),
+    fontSize: isTablet ? 32 : Math.round(width * 0.07),
     fontWeight: '600',
     marginBottom: Math.round(height * 0.008),
   },
@@ -154,7 +157,7 @@ const styles = StyleSheet.create({
     marginBottom: Math.round(height * 0.032),
   },
   formLabel: {
-    fontSize: Math.round(width * 0.04),
+    fontSize: isTablet ? 18 : Math.round(width * 0.04),
     fontWeight: '600',
     marginBottom: Math.round(height * 0.01),
   },
@@ -170,24 +173,24 @@ const styles = StyleSheet.create({
   },
   formInput: {
     width: '100%',
-    height: Math.round(height * 0.055),
+    height: isTablet ? 50 : Math.round(height * 0.055),
     paddingHorizontal: Math.round(width * 0.04),
     borderRadius: 31,
-    fontSize: Math.round(width * 0.032),
+    fontSize: isTablet ? 16 : Math.round(width * 0.032),
     fontWeight: '600',
   },
   formInputWithIcon: {
     width: '100%',
-    height: Math.round(height * 0.055),
+    height: isTablet ? 50 : Math.round(height * 0.055),
     paddingLeft: Math.round(width * 0.1),
     paddingRight: Math.round(width * 0.04),
     borderRadius: 31,
-    fontSize: Math.round(width * 0.032),
+    fontSize: isTablet ? 16 : Math.round(width * 0.032),
     fontWeight: '600',
   },
   loginButton: {
     width: '100%',
-    height: Math.round(height * 0.055),
+    height: isTablet ? 50 : Math.round(height * 0.055),
     borderRadius: 31,
     flexDirection: 'row',
     alignItems: 'center',
@@ -196,7 +199,7 @@ const styles = StyleSheet.create({
     marginTop: Math.round(height * 0.025),
   },
   loginButtonText: {
-    fontSize: Math.round(width * 0.04),
+    fontSize: isTablet ? 18 : Math.round(width * 0.04),
     fontWeight: '600',
   },
 });

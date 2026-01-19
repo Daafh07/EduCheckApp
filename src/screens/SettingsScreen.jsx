@@ -19,6 +19,10 @@ import { useLanguage, languageNames } from '../../LanguageContext';
 
 const { height, width } = Dimensions.get('window');
 
+// iPad detection and responsive scaling
+const isTablet = width >= 768;
+const contentPadding = isTablet ? Math.round(width * 0.15) : Math.round(width * 0.09);
+
 const SettingsScreen = ({ onNavigateBack, onLogout }) => {
   const { isDarkMode, toggleDarkMode, theme, isPartyMode, startPartyMode } = useTheme();
   const { language, changeLanguage, t } = useLanguage();
@@ -426,12 +430,12 @@ const styles = StyleSheet.create({
   },
   appTitle: {
     textAlign: 'center',
-    fontSize: 37,
+    fontSize: isTablet ? 44 : 37,
     fontWeight: '600',
   },
   content: {
     flex: 1,
-    paddingHorizontal: Math.round(width * 0.09),
+    paddingHorizontal: contentPadding,
     paddingTop: Math.round(height * 0.03),
   },
   pageHeader: {
@@ -442,7 +446,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   pageTitle: {
-    fontSize: Math.round(width * 0.07),
+    fontSize: isTablet ? 34 : Math.round(width * 0.07),
     fontWeight: '600',
   },
   backButton: {
@@ -450,7 +454,7 @@ const styles = StyleSheet.create({
     left: Math.round(width * -0.015),
   },
   backButtonText: {
-    fontSize: Math.round(width * 0.07),
+    fontSize: isTablet ? 34 : Math.round(width * 0.07),
     fontWeight: '600',
   },
   profileCard: {
@@ -465,17 +469,17 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   profileAvatar: {
-    width: Math.round(width * 0.16),
-    height: Math.round(width * 0.16),
-    borderRadius: Math.round(width * 0.16),
+    width: isTablet ? 80 : Math.round(width * 0.16),
+    height: isTablet ? 80 : Math.round(width * 0.16),
+    borderRadius: isTablet ? 40 : Math.round(width * 0.16),
   },
   profileName: {
-    fontSize: Math.round(width * 0.045),
+    fontSize: isTablet ? 22 : Math.round(width * 0.045),
     fontWeight: '600',
     marginBottom: Math.round(height * 0.005),
   },
   profileRole: {
-    fontSize: Math.round(width * 0.035),
+    fontSize: isTablet ? 16 : Math.round(width * 0.035),
     fontWeight: '600',
   },
   divider: {
@@ -491,7 +495,7 @@ const styles = StyleSheet.create({
     paddingVertical: Math.round(height * 0.005),
   },
   rowText: {
-    fontSize: Math.round(width * 0.04),
+    fontSize: isTablet ? 18 : Math.round(width * 0.04),
     fontWeight: '600',
   },
   settingsCard: {
@@ -510,26 +514,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalContainer: {
-    width: Math.min(420, width - 60),
+    width: isTablet ? 450 : Math.min(420, width - 60),
     borderRadius: 18,
-    padding: 20,
+    padding: isTablet ? 28 : 20,
     alignItems: 'stretch',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: isTablet ? 22 : 18,
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: isTablet ? 16 : 12,
   },
   modalRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
+    paddingVertical: isTablet ? 14 : 10,
     paddingHorizontal: 6,
   },
   modalRowText: {
-    fontSize: 16,
+    fontSize: isTablet ? 18 : 16,
     fontWeight: '600',
   },
   modalClose: {
